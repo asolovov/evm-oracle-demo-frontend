@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   ageSecondsSince,
   formatAge,
-  formatChange,
   formatOnChainPrice,
   formatPrice,
   freshness,
@@ -35,8 +34,10 @@ describe("formatOnChainPrice", () => {
     expect(formatOnChainPrice("0x1f")).toBe("—");
   });
 
-  it("keeps precision for values beyond 2^53 (BigInt path)", () => {
-    // 99,999,999,999,999 USD scaled by 1e8 — exceeds Number's safe integer range.
+  it("avoids precision loss when the scaled integer exceeds Number's safe range", () => {
+    // The scaled value (~1e22) is far beyond 2^53, so a naive Number(scaled)
+    // would be imprecise before dividing. The BigInt digit-split keeps the
+    // (safe-range) dollar value exact.
     expect(formatOnChainPrice("9999999999999900000000")).toBe("$99,999,999,999,999.00");
   });
 
@@ -91,12 +92,5 @@ describe("shorten", () => {
   it("leaves short strings intact and dashes empty", () => {
     expect(shorten("0x1234")).toBe("0x1234");
     expect(shorten(undefined)).toBe("—");
-  });
-});
-
-describe("formatChange", () => {
-  it("adds an explicit sign", () => {
-    expect(formatChange(1.84)).toBe("+1.84%");
-    expect(formatChange(-2.55)).toBe("-2.55%");
   });
 });

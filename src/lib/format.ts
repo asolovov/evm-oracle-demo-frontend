@@ -80,10 +80,3 @@ export function shorten(hex: string | undefined, lead = 6, tail = 4): string {
   if (hex.length <= lead + tail + 1) return hex;
   return `${hex.slice(0, lead)}…${hex.slice(-tail)}`;
 }
-
-/** Signed percentage change, e.g. "+1.84%" / "-2.55%". */
-export function formatChange(pct: number): string {
-  if (!Number.isFinite(pct)) return "—";
-  const sign = pct >= 0 ? "+" : "-";
-  return `${sign}${Math.abs(pct).toFixed(2)}%`;
-}
