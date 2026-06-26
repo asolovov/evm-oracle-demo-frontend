@@ -1,26 +1,73 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
+import { CrtBackground } from "@/components/layout/crt-background";
+import { CrtOverlays } from "@/components/layout/crt-overlays";
+import { DemoBanner } from "@/components/layout/demo-banner";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
+import { WalletProvider } from "@/components/wallet/wallet-provider";
+import { AUTHOR } from "@/config/author";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const TITLE = "Lighthouse Oracle — Multi-source price oracle by Andrei Solovov";
 
 export const metadata: Metadata = {
-  title: "frontend-next-template",
-  description: "Next.js template optimized for AI-agent coding workflows",
+  metadataBase: new URL("https://lighthouse-oracle.example"),
+  title: TITLE,
+  description: AUTHOR.bio,
+  authors: [{ name: AUTHOR.name, url: AUTHOR.links.github }],
+  openGraph: {
+    type: "website",
+    title: "Lighthouse Oracle",
+    description: AUTHOR.bio,
+    siteName: "Lighthouse Oracle",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lighthouse Oracle",
+    description: AUTHOR.bio,
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>
+    <html lang="en" className={`${jetbrainsMono.variable} h-full antialiased`}>
+      <body style={{ minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
+        <CrtBackground />
+        <WalletProvider>
+          <div
+            style={{
+              position: "relative",
+              zIndex: 5,
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <DemoBanner />
+            <SiteHeader />
+            <main
+              style={{
+                flex: 1,
+                width: "100%",
+                maxWidth: 1240,
+                margin: "0 auto",
+                padding: "clamp(22px,4vw,46px) clamp(14px,4vw,40px) 70px",
+              }}
+            >
+              {children}
+            </main>
+            <SiteFooter />
+          </div>
+        </WalletProvider>
+        <CrtOverlays />
+      </body>
     </html>
   );
 }
