@@ -23,7 +23,18 @@ const PHASE_LABEL: Record<Phase, string> = {
  * calldata (via BFF) → sign+broadcast → read reqId from the receipt → route to
  * the request status page.
  */
-export function RequestButton({ assetId }: { assetId: string }) {
+export function RequestButton({
+  assetId,
+  aggregatorKnown = true,
+}: {
+  assetId: string;
+  /**
+   * Whether the BFF has resolved this asset's aggregator address. When false,
+   * `build-tx` will 503 (`aggregator_not_resolved`) — surface that up front
+   * instead of letting the user click into a guaranteed failure.
+   */
+  aggregatorKnown?: boolean;
+}) {
   const wallet = useWallet();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
@@ -109,12 +120,27 @@ export function RequestButton({ assetId }: { assetId: string }) {
       <button
         type="button"
         onClick={() => void run()}
-        disabled={busy}
+        disabled={busy || !aggregatorKnown}
         className="lh-btn"
         style={{ fontSize: 13, padding: "13px 22px" }}
+        title={aggregatorKnown ? undefined : "Aggregator not indexed yet"}
       >
         {PHASE_LABEL[phase]}
       </button>
+      {!aggregatorKnown ? (
+        <span
+          style={{
+            fontSize: 11,
+            letterSpacing: "0.5px",
+            color: "var(--fg-muted)",
+            maxWidth: 320,
+            textAlign: "right",
+          }}
+        >
+          ⚠ Aggregator not indexed yet — on-chain requests are unavailable until the indexer catches
+          up.
+        </span>
+      ) : null}
       {message ? (
         <span
           style={{

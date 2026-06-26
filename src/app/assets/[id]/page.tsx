@@ -121,7 +121,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             </span>
           </div>
         </div>
-        <RequestButton assetId={asset.id} />
+        <RequestButton assetId={asset.id} aggregatorKnown={Boolean(aggregator)} />
       </div>
 
       <PriceChart assetId={asset.id} symbol={asset.symbol} base={price} />
