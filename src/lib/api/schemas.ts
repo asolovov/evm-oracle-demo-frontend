@@ -77,9 +77,9 @@ export const requestSummarySchema = z.object({
 export type RequestSummary = z.infer<typeof requestSummarySchema>;
 
 export const buildTxResponseSchema = z.object({
-  to: z.string(),
-  data: z.string(),
-  value: z.string(),
+  to: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "expected a 20-byte hex address"),
+  data: z.string().regex(/^0x[0-9a-fA-F]*$/, "expected 0x-prefixed hex calldata"),
+  value: z.string().regex(/^\d+$/, "expected a base-10 wei value"),
   chain_id: z.number().int(),
   chain_name: z.string().optional(),
 });

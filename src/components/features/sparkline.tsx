@@ -1,4 +1,4 @@
-import { pathGeometry, RANGE_VOL, synthSeries } from "@/lib/chart";
+import { hashSeed, pathGeometry, RANGE_VOL, synthSeries } from "@/lib/chart";
 
 /**
  * Small decorative trend sparkline. Seeded deterministically from the asset id —
@@ -10,7 +10,8 @@ export function Sparkline({ seed, base }: { seed: string; base: number }) {
   const h = 34;
   const vals = synthSeries(seed, 24, RANGE_VOL["24h"] * 2, base || 1);
   const { line, area } = pathGeometry(vals, w, h);
-  const gradientId = `spark-${seed.replace(/[^a-z0-9]/gi, "")}`;
+  // Hash the seed so distinct ids can't collide after sanitizing characters.
+  const gradientId = `spark-${hashSeed(seed)}`;
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}

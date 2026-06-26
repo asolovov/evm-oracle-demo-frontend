@@ -22,6 +22,9 @@ export function CrtOverlays() {
           pointerEvents: "none",
           background: "var(--ac)",
           mixBlendMode: "overlay",
+          // Base opacity so the overlay stays subtle when the animation is
+          // disabled under prefers-reduced-motion (otherwise it'd be fully opaque).
+          opacity: 0.06,
           animation: "flick 0.13s infinite",
         }}
       />

@@ -66,7 +66,7 @@ export function AssetTile({ data, animate = true }: { data: AssetTileData; anima
         <FreshnessDots ages={data.sourceAges} animate={animate} />
       </div>
 
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 4 }}>
         <span
           style={{
             fontSize: 23,
@@ -78,6 +78,10 @@ export function AssetTile({ data, animate = true }: { data: AssetTileData; anima
           {data.priceStr}
         </span>
       </div>
+
+      {/* Reserved slot preserving the design's vertical rhythm (the per-tile
+          change % from the design isn't available from the API). */}
+      <div style={{ height: 14, marginBottom: 14 }} />
 
       <div style={{ margin: "0 -2px 14px" }}>
         <Sparkline seed={data.id} base={data.sparkBase} />

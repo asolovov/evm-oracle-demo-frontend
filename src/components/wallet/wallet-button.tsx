@@ -22,10 +22,11 @@ export function WalletButton() {
   }
 
   if (wallet.address) {
+    // Non-interactive status display — connected, nothing to click.
     return (
-      <button
-        type="button"
-        onClick={() => void 0}
+      <span
+        role="status"
+        aria-label={`Wallet connected: ${wallet.address}`}
         className="lh-btn-outline"
         style={{
           display: "flex",
@@ -48,7 +49,7 @@ export function WalletButton() {
           }}
         />
         {shorten(wallet.address)}
-      </button>
+      </span>
     );
   }
 

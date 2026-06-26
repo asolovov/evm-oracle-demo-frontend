@@ -9,11 +9,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import { createWalletClient, custom } from "viem";
+import { createWalletClient, custom, isAddress, isHex } from "viem";
 import { CHAIN } from "@/config/chain";
 import { getInjectedProvider, viemChain } from "@/lib/wallet/injected";
 
 export type SendTxInput = { to: string; data: string; value: string };
+
+export type ConnectResult = { address: string | null; chainId: number | null };
 
 export type WalletState = {
   /** True once we've checked for an injected wallet on the client. */
@@ -28,8 +30,8 @@ export type WalletState = {
   onTargetChain: boolean;
   connecting: boolean;
   error: string | null;
-  /** Connects and resolves to the connected address (or null on failure/decline). */
-  connect: () => Promise<string | null>;
+  /** Connects and resolves to the connected address + chain id (nulls on failure/decline). */
+  connect: () => Promise<ConnectResult>;
   /** Switches to the target chain and resolves to whether we ended up on it. */
   switchToTargetChain: () => Promise<boolean>;
   /** Sends a prebuilt transaction and resolves to the tx hash. */
@@ -70,12 +72,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     })();
 
     const onAccounts = (...args: unknown[]) => {
-      const accounts = (args[0] as string[] | undefined) ?? [];
-      setAddress(accounts[0] ?? null);
+      const accounts: unknown[] = Array.isArray(args[0]) ? args[0] : [];
+      const first = accounts[0];
+      setAddress(typeof first === "string" ? first : null);
     };
     const onChain = (...args: unknown[]) => {
-      const hex = args[0] as string | undefined;
-      setChainId(hex ? Number.parseInt(hex, 16) : null);
+      const hex = args[0];
+      setChainId(typeof hex === "string" ? Number.parseInt(hex, 16) : null);
     };
     provider.on?.("accountsChanged", onAccounts);
     provider.on?.("chainChanged", onChain);
@@ -87,11 +90,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const connect = useCallback(async (): Promise<string | null> => {
+  const connect = useCallback(async (): Promise<ConnectResult> => {
     const provider = getInjectedProvider();
     if (!provider) {
       setError("No EVM wallet detected. Install MetaMask or a compatible wallet.");
-      return null;
+      return { address: null, chainId: null };
     }
     setConnecting(true);
     setError(null);
@@ -102,10 +105,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const account = accounts[0] ?? null;
       setAddress(account);
       setChainId(id);
-      return account;
+      return { address: account, chainId: id };
     } catch (err) {
       setError(err instanceof Error ? err.message : "Wallet connection failed.");
-      return null;
+      return { address: null, chainId: null };
     } finally {
       setConnecting(false);
     }
@@ -140,16 +143,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     async (tx: SendTxInput) => {
       const provider = getInjectedProvider();
       if (!provider) throw new Error("No wallet available.");
-      if (!address) throw new Error("Connect a wallet first.");
-      const client = createWalletClient({
-        account: address as `0x${string}`,
-        transport: custom(provider),
-      });
+      if (!address || !isAddress(address)) throw new Error("Connect a wallet first.");
+      if (!isAddress(tx.to)) throw new Error("Invalid transaction target address.");
+      if (!isHex(tx.data)) throw new Error("Invalid transaction calldata.");
+      const client = createWalletClient({ account: address, transport: custom(provider) });
       return client.sendTransaction({
-        account: address as `0x${string}`,
+        account: address,
         chain: viemChain,
-        to: tx.to as `0x${string}`,
-        data: tx.data as `0x${string}`,
+        to: tx.to,
+        data: tx.data,
         value: BigInt(tx.value || "0"),
       });
     },

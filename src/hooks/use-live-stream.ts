@@ -41,22 +41,29 @@ export function useLiveStream(handlers: Handlers): LiveStreamStatus {
 
     const connect = () => {
       setStatus("connecting");
+      let current: WebSocket;
       try {
-        socket = new WebSocket(`${resolveWsBase()}/ws/stream`);
+        current = new WebSocket(`${resolveWsBase()}/ws/stream`);
       } catch {
         scheduleReconnect();
         return;
       }
+      socket = current;
+      // Ignore late events from a socket we've already replaced.
+      const isStale = () => socket !== current;
 
-      socket.onopen = () => {
+      current.onopen = () => {
+        if (isStale()) return;
         attempt = 0;
         setStatus("open");
       };
 
-      socket.onmessage = (ev) => {
+      current.onmessage = (ev) => {
+        if (isStale()) return;
+        if (typeof ev.data !== "string") return;
         let raw: unknown;
         try {
-          raw = JSON.parse(ev.data as string);
+          raw = JSON.parse(ev.data);
         } catch {
           return; // ignore non-JSON frames
         }
@@ -66,13 +73,14 @@ export function useLiveStream(handlers: Handlers): LiveStreamStatus {
         else handlersRef.current.onEvent?.(parsed.data.payload);
       };
 
-      socket.onclose = () => {
+      current.onclose = () => {
+        if (isStale()) return;
         setStatus("closed");
         if (!closedByUs) scheduleReconnect();
       };
 
-      socket.onerror = () => {
-        socket?.close();
+      current.onerror = () => {
+        current.close();
       };
     };
 

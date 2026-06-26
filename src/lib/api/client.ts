@@ -63,7 +63,16 @@ async function apiFetch<T>(
 
   const res = await fetch(url, init);
   const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Non-JSON body (gateway HTML, truncated response): surface as ApiError
+      // so callers' graceful-degradation paths handle it instead of a raw throw.
+      throw new ApiError(res.status, "invalid_json", res.statusText || "Invalid response", text);
+    }
+  }
 
   if (!res.ok) {
     const message =

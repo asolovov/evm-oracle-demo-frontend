@@ -9,7 +9,8 @@
  */
 export function formatPrice(value: number): string {
   if (!Number.isFinite(value)) return "—";
-  const decimals = value < 1 || Math.abs(value - 1) < 0.02 ? 4 : 2;
+  const abs = Math.abs(value);
+  const decimals = abs < 1 || Math.abs(abs - 1) < 0.02 ? 4 : 2;
   return `$${value.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -21,10 +22,16 @@ export function formatPrice(value: number): string {
  * decimal string) into a formatted USD price.
  */
 export function formatOnChainPrice(scaled: string | undefined, decimals = 8): string {
-  if (!scaled) return "—";
-  const n = Number(scaled);
-  if (!Number.isFinite(n)) return "—";
-  return formatPrice(n / 10 ** decimals);
+  if (!scaled || !/^-?\d+$/.test(scaled)) return "—";
+  // Parse via BigInt so int256 values beyond 2^53 don't lose precision, then
+  // build the human value from the integer + fractional parts.
+  const negative = scaled.startsWith("-");
+  const digits = (negative ? scaled.slice(1) : scaled).padStart(decimals + 1, "0");
+  const whole = digits.slice(0, digits.length - decimals);
+  const frac = digits.slice(digits.length - decimals);
+  const value = Number(`${whole}.${frac}`);
+  if (!Number.isFinite(value)) return "—";
+  return formatPrice(negative ? -value : value);
 }
 
 /** Compact relative age from a whole number of seconds, e.g. "9s", "2m", "1h 12m". */

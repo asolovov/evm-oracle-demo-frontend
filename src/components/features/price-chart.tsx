@@ -32,6 +32,9 @@ export function PriceChart({
   const w = 720;
   const h = 220;
   const vals = synthSeries(`${assetId}-${range}`, RANGE_POINTS[range], RANGE_VOL[range], base || 1);
+  // Anchor the final ("now") point to the real current price so the endpoint and
+  // its marker reflect actual data even though the rest of the line is synthetic.
+  if (base > 0 && vals.length > 0) vals[vals.length - 1] = base;
   const { line, area, lastX, lastY } = pathGeometry(vals, w, h);
   const min = Math.min(...vals);
   const max = Math.max(...vals);

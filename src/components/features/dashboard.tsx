@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AssetTile } from "@/components/features/asset-tile";
-import { CHAIN } from "@/config/chain";
 import { type LiveStreamStatus, useLiveStream } from "@/hooks/use-live-stream";
 import type { AggregatedPrice, AssetSummary } from "@/lib/api/schemas";
 import { toTileData } from "@/lib/asset-view";
+
+/** Live on-chain context patched in from PRICE_FULFILLED stream frames. */
+type OnChainPatch = { price: string | undefined; tx: string | undefined; at: string };
 
 type Stat = { k: string; v: string };
 
@@ -57,10 +59,21 @@ const STREAM_LABEL: Record<LiveStreamStatus, string> = {
  */
 export function Dashboard({ initialAssets }: { initialAssets: AssetSummary[] }) {
   const [priceOverrides, setPriceOverrides] = useState<Record<string, AggregatedPrice>>({});
+  const [onChainPatches, setOnChainPatches] = useState<Record<string, OnChainPatch>>({});
   const [now, setNow] = useState<number>(() => Date.now());
 
   const status = useLiveStream({
     onPrice: (price) => setPriceOverrides((prev) => ({ ...prev, [price.asset_id]: price })),
+    onEvent: (event) => {
+      // A confirmed on-chain price write — refresh the tile's on-chain context.
+      if (event.kind !== "PRICE_FULFILLED" || !event.price_fulfilled) return;
+      const { asset_id, price } = event.price_fulfilled;
+      const at = new Date().toISOString();
+      setOnChainPatches((prev) => ({
+        ...prev,
+        [asset_id]: { price, tx: event.meta?.tx_hash, at },
+      }));
+    },
   });
 
   useEffect(() => {
@@ -71,17 +84,31 @@ export function Dashboard({ initialAssets }: { initialAssets: AssetSummary[] }) 
   const assets = useMemo(
     () =>
       initialAssets.map((a) => {
-        const override = priceOverrides[a.id];
-        return override ? { ...a, latest_price: override } : a;
+        const priceOverride = priceOverrides[a.id];
+        const patch = onChainPatches[a.id];
+        return {
+          ...a,
+          ...(priceOverride ? { latest_price: priceOverride } : {}),
+          ...(patch
+            ? {
+                last_on_chain_price: patch.price ?? a.last_on_chain_price,
+                last_on_chain_tx: patch.tx ?? a.last_on_chain_tx,
+                last_on_chain_at: patch.at,
+              }
+            : {}),
+        };
       }),
-    [initialAssets, priceOverrides],
+    [initialAssets, priceOverrides, onChainPatches],
   );
 
   const priced = assets.filter((a) => a.latest_price).length;
+  const distinctSources = new Set(
+    assets.flatMap((a) => a.latest_price?.sources.map((s) => s.source) ?? []),
+  ).size;
   const stats: Stat[] = [
     { k: "ASSETS TRACKED", v: String(assets.length) },
     { k: "FEEDS PRICED", v: `${priced} / ${assets.length}` },
-    { k: "NETWORK", v: CHAIN.name.toUpperCase() },
+    { k: "SOURCES", v: distinctSources > 0 ? String(distinctSources) : "—" },
     { k: "STREAM", v: STREAM_LABEL[status] },
   ];
 

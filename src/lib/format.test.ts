@@ -29,9 +29,24 @@ describe("formatOnChainPrice", () => {
   it("scales an 8-decimal int256 decimal string", () => {
     expect(formatOnChainPrice("341288000000")).toBe("$3,412.88");
   });
-  it("returns a dash when missing", () => {
+  it("returns a dash when missing or non-numeric", () => {
     expect(formatOnChainPrice(undefined)).toBe("—");
     expect(formatOnChainPrice("")).toBe("—");
+    expect(formatOnChainPrice("0x1f")).toBe("—");
+  });
+
+  it("keeps precision for values beyond 2^53 (BigInt path)", () => {
+    // 99,999,999,999,999 USD scaled by 1e8 — exceeds Number's safe integer range.
+    expect(formatOnChainPrice("9999999999999900000000")).toBe("$99,999,999,999,999.00");
+  });
+
+  it("handles sub-dollar scaled values with 4 decimals", () => {
+    expect(formatOnChainPrice("84200000")).toBe("$0.8420");
+  });
+
+  it("uses 2 decimals for large magnitudes regardless of sign", () => {
+    expect(formatOnChainPrice("-341288000000")).toContain("3,412.88");
+    expect(formatOnChainPrice("-341288000000")).not.toContain("3,412.8800");
   });
 });
 

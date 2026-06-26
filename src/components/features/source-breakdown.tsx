@@ -48,7 +48,7 @@ export function SourceBreakdown({ sources }: { sources: SourceContribution[] }) 
             }}
           >
             <span style={{ flex: 1.6, color: "var(--fg)", letterSpacing: "0.5px" }}>
-              {s.source.toUpperCase()}
+              {s.source.replace(/_/g, " ").toUpperCase()}
             </span>
             <span style={{ flex: 1, textAlign: "right", color: "var(--ac)" }}>
               {formatPrice(s.price)}

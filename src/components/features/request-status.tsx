@@ -168,17 +168,24 @@ export function RequestStatus({
 }) {
   const [summary, setSummary] = useState<RequestSummary | null>(initial);
   const [polling, setPolling] = useState(!(initial && isTerminal(initial.status)));
+  const [pollError, setPollError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!polling) return;
     let cancelled = false;
     const tick = async () => {
-      const res = await getRequestStatusAction({ reqId });
-      if (cancelled) return;
-      const data = res?.data;
-      if (data) {
-        setSummary(data);
-        if (isTerminal(data.status)) setPolling(false);
+      try {
+        const res = await getRequestStatusAction({ reqId });
+        if (cancelled) return;
+        const data = res?.data;
+        if (data) {
+          setSummary(data);
+          setPollError(null);
+          if (isTerminal(data.status)) setPolling(false);
+        }
+      } catch {
+        // Transient fetch failure — keep polling, just surface a hint.
+        if (!cancelled) setPollError("connection hiccup — retrying…");
       }
     };
     const iv = setInterval(() => void tick(), POLL_MS);
@@ -193,22 +200,26 @@ export function RequestStatus({
   const failed = summary?.status === "failed";
   const symbol = summary?.asset_id ? summary.asset_id.toUpperCase() : "—";
 
+  const backStyle = {
+    display: "inline-block",
+    fontSize: 12,
+    letterSpacing: "1.5px",
+    marginBottom: 22,
+    border: "none",
+    padding: 0,
+  } as const;
+
   return (
     <div style={{ maxWidth: 760, margin: "0 auto" }}>
-      <Link
-        href="/"
-        className="lh-nav"
-        style={{
-          display: "inline-block",
-          fontSize: 12,
-          letterSpacing: "1.5px",
-          marginBottom: 22,
-          border: "none",
-          padding: 0,
-        }}
-      >
-        ← cd ../dashboard
-      </Link>
+      {summary?.asset_id ? (
+        <Link href={`/assets/${summary.asset_id}`} className="lh-nav" style={backStyle}>
+          ← cd ../{symbol}
+        </Link>
+      ) : (
+        <Link href="/" className="lh-nav" style={backStyle}>
+          ← cd ../dashboard
+        </Link>
+      )}
 
       <div style={{ fontSize: 11, letterSpacing: "2px", color: "var(--fg-dim)", marginBottom: 8 }}>
         {"REQUEST // requestPrice("}
@@ -237,6 +248,9 @@ export function RequestStatus({
         </span>
         {polling ? (
           <span style={{ animation: "blink 1s step-end infinite", color: "var(--ac)" }}> ▮</span>
+        ) : null}
+        {pollError ? (
+          <span style={{ color: "var(--bad)", marginLeft: 8 }}>· {pollError}</span>
         ) : null}
       </div>
 

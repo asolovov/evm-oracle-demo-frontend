@@ -36,10 +36,14 @@ export function RequestButton({ assetId }: { assetId: string }) {
     setMessage(null);
     setTxHash(null);
 
-    // 1. Wallet present + connected.
+    // 1. Wallet present + connected. Track address + chain from fresh results
+    // (state from this render is stale across the awaits below).
     let address = wallet.address;
+    let onTargetChain = wallet.onTargetChain;
     if (!address) {
-      address = await wallet.connect();
+      const result = await wallet.connect();
+      address = result.address;
+      onTargetChain = result.address !== null && result.chainId === CHAIN.id;
       if (!address) {
         setPhase("error");
         setMessage(wallet.error ?? "Connect a wallet to request an update.");
@@ -48,7 +52,7 @@ export function RequestButton({ assetId }: { assetId: string }) {
     }
 
     // 2. Correct chain.
-    if (!wallet.onTargetChain) {
+    if (!onTargetChain) {
       const ok = await wallet.switchToTargetChain();
       if (!ok) {
         setPhase("error");
@@ -68,6 +72,13 @@ export function RequestButton({ assetId }: { assetId: string }) {
         return;
       }
 
+      // Defensive: never sign a tx the BFF built for a different chain.
+      if (tx.chain_id !== CHAIN.id) {
+        setPhase("error");
+        setMessage(`Chain mismatch: the API targeted chain ${tx.chain_id}, expected ${CHAIN.id}.`);
+        return;
+      }
+
       // 4. Sign + broadcast.
       setPhase("signing");
       const hash = await wallet.sendTransaction({ to: tx.to, data: tx.data, value: tx.value });
@@ -75,7 +86,7 @@ export function RequestButton({ assetId }: { assetId: string }) {
 
       // 5. Wait for the receipt and pull out reqId.
       setPhase("mining");
-      const reqId = await waitForRequestId(hash, tx.to);
+      const reqId = await waitForRequestId(hash, { aggregator: tx.to, requester: address });
       if (reqId) {
         setPhase("done");
         router.push(`/requests/${reqId}`);
