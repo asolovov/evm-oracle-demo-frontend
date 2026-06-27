@@ -232,9 +232,7 @@ export default async function HowItWorksPage() {
             color: "#9ad6a0",
             overflowX: "auto",
           }}
-        >{`(, int256 answer, , uint256 updatedAt, ) =
-  AggregatorV3Interface(${aggregator ? `${aggregator.slice(0, 12)}…` : "0x…"})
-    .latestRoundData();`}</pre>
+        >{`(, int256 answer, , uint256 updatedAt, ) = AggregatorV3Interface(${aggregator ? `${aggregator.slice(0, 12)}…` : "0x…"}).latestRoundData();`}</pre>
         {sampleFeed ? (
           <div style={{ marginTop: 12, fontSize: 12.5, color: "var(--fg-dim)" }}>
             Live read (WETH): answer ={" "}

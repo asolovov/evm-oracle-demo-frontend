@@ -17,7 +17,7 @@ import {
   type OnChainFeed,
   type OnChainRound,
 } from "@/lib/chain/reads";
-import { formatAge, formatAgeSince, formatOnChainPrice, formatPrice } from "@/lib/format";
+import { formatAge, formatAgeSince, formatOnChainPrice, formatPrice, shorten } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -243,11 +243,20 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         >
           <Fact k="ADDRESS">
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span>{aggregator || "not yet observed"}</span>
+              <span>{aggregator ? shorten(aggregator, 10, 8) : "not yet observed"}</span>
               {aggregator ? <CopyButton value={aggregator} /> : null}
             </div>
           </Fact>
-          <Fact k="ASSET ID (bytes32)">{assetIdHash ?? "—"}</Fact>
+          <Fact k="ASSET ID (bytes32)">
+            {assetIdHash ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span>{shorten(assetIdHash, 10, 8)}</span>
+                <CopyButton value={assetIdHash} />
+              </div>
+            ) : (
+              "—"
+            )}
+          </Fact>
           <Fact k="DECIMALS">{String(decimals)}</Fact>
           <Fact k="TOTAL REQUESTS">{onchain ? onchain.nextReqId.toString() : "—"}</Fact>
           <Fact k="REQUEST FEE">
@@ -285,11 +294,10 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
                 fontSize: 11.5,
                 lineHeight: 1.6,
                 color: "#9ad6a0",
-                whiteSpace: "pre-wrap",
+                whiteSpace: "pre",
+                overflowX: "auto",
               }}
-            >{`(, int256 answer, , uint256 updatedAt, ) =
-  AggregatorV3Interface(${aggregator ? `${aggregator.slice(0, 10)}…` : "0x…"})
-    .latestRoundData();
+            >{`(, int256 answer, , uint256 updatedAt, ) = AggregatorV3Interface(${aggregator ? `${aggregator.slice(0, 10)}…` : "0x…"}).latestRoundData();
 // live: answer = ${onChainPriceStr}, ${onChainAgeStr}`}</pre>
           </div>
           {aggregator ? (
