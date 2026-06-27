@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#0a0806"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#ffb000" stroke-opacity="0.28" stroke-width="1.5"/>
+  <!-- prompt chevron -->
+  <path d="M18 20 L34 32 L18 44" fill="none" stroke="#ffb000" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- cursor block -->
+  <rect x="38" y="37" width="13" height="7" rx="1.5" fill="#ffb000"/>
+</svg>

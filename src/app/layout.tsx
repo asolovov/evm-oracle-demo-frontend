@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { CrtBackground } from "@/components/layout/crt-background";
 import { CrtOverlays } from "@/components/layout/crt-overlays";
@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { WalletProvider } from "@/components/wallet/wallet-provider";
 import { AUTHOR } from "@/config/author";
+import { env } from "@/env";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -18,12 +19,13 @@ const jetbrainsMono = JetBrains_Mono({
 const TITLE = "Lighthouse Oracle — Multi-source price oracle by Andrei Solovov";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://lighthouse-oracle.example"),
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
   title: TITLE,
   description: AUTHOR.bio,
   authors: [{ name: AUTHOR.name, url: AUTHOR.links.github }],
   openGraph: {
     type: "website",
+    url: env.NEXT_PUBLIC_SITE_URL,
     title: "Lighthouse Oracle",
     description: AUTHOR.bio,
     siteName: "Lighthouse Oracle",
@@ -33,6 +35,11 @@ export const metadata: Metadata = {
     title: "Lighthouse Oracle",
     description: AUTHOR.bio,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffb000",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

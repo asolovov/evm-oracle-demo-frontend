@@ -154,11 +154,26 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const disconnect = useCallback(() => {
-    // EIP-1193 has no real disconnect; forget the account locally and remember
-    // the choice so we don't auto-reconnect on the next load.
+  const disconnect = useCallback(async () => {
+    const provider = getInjectedProvider();
+    // Revoke the dapp's account permission so the NEXT connect re-prompts the
+    // wallet (fresh MetaMask popup) instead of silently re-authorizing. Not all
+    // wallets support this — the local flag below is the fallback.
+    if (provider) {
+      try {
+        await provider.request({
+          method: "wallet_revokePermissions",
+          params: [{ eth_accounts: {} }],
+        });
+      } catch {
+        // Unsupported / declined — local disconnect still applies.
+      }
+    }
+    // Forget everything we cached about the session, and remember the choice so
+    // we don't auto-reconnect on the next load.
     if (typeof window !== "undefined") localStorage.setItem(DISCONNECT_KEY, "1");
     setAddress(null);
+    setChainId(null);
     setError(null);
   }, []);
 

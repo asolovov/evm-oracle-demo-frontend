@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#0a0806"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#ffb000" stroke-opacity="0.28" stroke-width="1.5"/>
+  <!-- beams -->
+  <path d="M26 20 L11 13 M38 20 L53 13" stroke="#ffb000" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
+  <!-- lantern + roof -->
+  <path d="M25 13 L39 13 L32 6 Z" fill="#ffb000"/>
+  <rect x="25.5" y="13" width="13" height="7" fill="#ffb000"/>
+  <!-- tower -->
+  <path d="M26.5 20 L37.5 20 L41 52 L23 52 Z" fill="#ffb000"/>
+  <!-- door -->
+  <rect x="29.5" y="44" width="5" height="8" rx="2.5" fill="#0a0806"/>
+  <!-- base -->
+  <rect x="19" y="52" width="26" height="4.5" rx="1.5" fill="#ffb000"/>
+</svg>
