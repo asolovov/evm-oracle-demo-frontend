@@ -13,6 +13,13 @@ import type { Address, Hex } from "viem";
  */
 export const ORACLE_REGISTRY: Address = "0x89a6c12a403733c6a817472cec46a530581cb7ef";
 
+/** M-of-N reporter set (ReporterSet.sol). Source of the live 2-of-3 set. */
+export const REPORTER_SET: Address = "0x683e888295515fdc27afe7dafd101f8789afe698";
+
+/** Canonical Multicall3 (same address on every chain incl. Sepolia). viem
+ * batches `eth_call`s through it when the chain object carries this address. */
+export const MULTICALL3: Address = "0xcA11bde05977b3631167028862bE2a173976CA11";
+
 export type AssetMeta = { id: string; symbol: string; aggregator: Address; assetId: Hex };
 
 export const ASSETS: AssetMeta[] = [

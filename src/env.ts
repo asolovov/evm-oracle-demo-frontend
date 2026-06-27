@@ -3,8 +3,13 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    // Add server-only env vars here. Example:
-    // API_TOKEN: z.string().min(1),
+    /**
+     * Public JSON-RPC endpoint for read-only on-chain calls (latestRoundData,
+     * reporter set, etc.). Server-only on purpose — reads happen server-side, so
+     * the URL is never inlined into the client bundle. Defaults to a public
+     * Sepolia node.
+     */
+    RPC_URL: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
   },
   client: {
     /** Base URL of the Go BFF (`evm-oracle-demo-api`). Used by the server-side API client. */
