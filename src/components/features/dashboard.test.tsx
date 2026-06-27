@@ -36,6 +36,19 @@ describe("Dashboard", () => {
     expect(screen.getByText(/No feeds available/i)).toBeInTheDocument();
   });
 
+  it("renders real server stats (reporters, total requests, block)", () => {
+    render(
+      <Dashboard
+        initialAssets={[makeAssetSummary()]}
+        serverStats={{ reporters: 3, threshold: 2, totalRequests: 8, block: "6284193" }}
+      />,
+    );
+    expect(screen.getByText("REPORTERS")).toBeInTheDocument();
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    expect(screen.getByText("8")).toBeInTheDocument();
+    expect(screen.getByText("#6284193")).toBeInTheDocument();
+  });
+
   it("merges a live price frame into the matching tile", () => {
     render(<Dashboard initialAssets={[makeAssetSummary()]} />);
     const tile = screen.getByTestId("asset-tile-weth");

@@ -1,7 +1,9 @@
-import { BootTerminal } from "@/components/features/boot-terminal";
-import { Dashboard } from "@/components/features/dashboard";
-import { getAssets } from "@/lib/api/oracle";
+import { Dashboard, type ServerStats } from "@/components/features/dashboard";
+import { type BootInfo, LiveTerminal } from "@/components/features/live-terminal";
+import { getAssets, getSubmissions } from "@/lib/api/oracle";
 import type { AssetSummary } from "@/lib/api/schemas";
+import { getAllLatestRounds, getLatestBlock, getReporterSet } from "@/lib/chain/reads";
+import { submissionToLine, type TerminalLine } from "@/lib/terminal-line";
 
 // Prices are live; never statically cache this route.
 export const dynamic = "force-dynamic";
@@ -21,13 +23,47 @@ const LIGHTHOUSE_ASCII = `      _____
   ~ ~ ~ ~ ~ ~ ~`;
 
 export default async function LandingPage() {
-  // Degrade gracefully: a down API renders an empty dashboard, not a 500.
+  // Everything below is real + fail-soft. BFF reads (assets, submissions) and
+  // on-chain reads (reporter set, total requests, block) run in parallel.
   let assets: AssetSummary[] = [];
   try {
     assets = (await getAssets()).assets;
   } catch {
     assets = [];
   }
+
+  let seed: TerminalLine[] = [];
+  try {
+    const { submissions } = await getSubmissions({ pageSize: 12 });
+    // Newest-first from the API → reverse so the newest sits at the bottom.
+    seed = submissions.map(submissionToLine).reverse();
+  } catch {
+    seed = [];
+  }
+
+  const [reporterSet, allRounds, block] = await Promise.all([
+    getReporterSet(),
+    getAllLatestRounds(),
+    getLatestBlock(),
+  ]);
+
+  const totalRequests = Object.values(allRounds).reduce((sum, r) => sum + Number(r.nextReqId), 0);
+  const blockStr = block !== null ? block.toString() : null;
+
+  const serverStats: ServerStats = {
+    ...(reporterSet
+      ? { reporters: reporterSet.reporters.length, threshold: reporterSet.threshold }
+      : {}),
+    totalRequests,
+    block: blockStr,
+  };
+
+  const boot: BootInfo = {
+    reporters: reporterSet?.reporters.length ?? 0,
+    threshold: reporterSet?.threshold ?? 0,
+    block: blockStr,
+    assetCount: assets.length,
+  };
 
   return (
     <div>
@@ -79,7 +115,7 @@ export default async function LandingPage() {
             on-chain. <span style={{ color: "var(--ac)" }}>On-chain truth</span>, off-chain speed —
             verifiable to the round.
           </p>
-          <BootTerminal />
+          <LiveTerminal boot={boot} seed={seed} />
         </div>
 
         <div style={{ flexShrink: 0, position: "relative", padding: "18px 10px" }}>
@@ -114,7 +150,7 @@ export default async function LandingPage() {
         </div>
       </div>
 
-      <Dashboard initialAssets={assets} />
+      <Dashboard initialAssets={assets} serverStats={serverStats} />
     </div>
   );
 }

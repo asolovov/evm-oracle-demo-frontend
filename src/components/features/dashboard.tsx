@@ -57,14 +57,31 @@ const STREAM_LABEL: Record<LiveStreamStatus, string> = {
  * `price` frames from the WS stream on top (keyed by asset id) and re-renders
  * relative ages on a 1s tick.
  */
-export function Dashboard({ initialAssets }: { initialAssets: AssetSummary[] }) {
+/** Real, server-read stats (from the on-chain data layer, task 09.1). */
+export type ServerStats = {
+  reporters?: number;
+  threshold?: number;
+  totalRequests?: number;
+  block?: string | null;
+};
+
+export function Dashboard({
+  initialAssets,
+  serverStats,
+}: {
+  initialAssets: AssetSummary[];
+  serverStats?: ServerStats;
+}) {
   const [priceOverrides, setPriceOverrides] = useState<Record<string, AggregatedPrice>>({});
   const [onChainPatches, setOnChainPatches] = useState<Record<string, OnChainPatch>>({});
+  const [liveBlock, setLiveBlock] = useState<string | null>(null);
   const [now, setNow] = useState<number>(() => Date.now());
 
   const status = useLiveStream({
     onPrice: (price) => setPriceOverrides((prev) => ({ ...prev, [price.asset_id]: price })),
     onEvent: (event) => {
+      // Latest block comes from the WS event meta — no RPC poll.
+      if (event.meta?.block_number) setLiveBlock(String(event.meta.block_number));
       // A confirmed on-chain price write — refresh the tile's on-chain context.
       if (event.kind !== "PRICE_FULFILLED" || !event.price_fulfilled) return;
       const { asset_id, price } = event.price_fulfilled;
@@ -105,10 +122,23 @@ export function Dashboard({ initialAssets }: { initialAssets: AssetSummary[] }) 
   const distinctSources = new Set(
     assets.flatMap((a) => a.latest_price?.sources.map((s) => s.source) ?? []),
   ).size;
+  const block = liveBlock ?? serverStats?.block ?? null;
   const stats: Stat[] = [
     { k: "ASSETS TRACKED", v: String(assets.length) },
     { k: "FEEDS PRICED", v: `${priced} / ${assets.length}` },
     { k: "SOURCES", v: distinctSources > 0 ? String(distinctSources) : "—" },
+    {
+      k: "REPORTERS",
+      v:
+        serverStats?.reporters && serverStats?.threshold
+          ? `${serverStats.threshold} / ${serverStats.reporters}`
+          : "—",
+    },
+    {
+      k: "TOTAL REQUESTS",
+      v: serverStats?.totalRequests != null ? String(serverStats.totalRequests) : "—",
+    },
+    { k: "LATEST BLOCK", v: block ? `#${block}` : "—" },
     { k: "STREAM", v: STREAM_LABEL[status] },
   ];
 
