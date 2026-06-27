@@ -23,8 +23,8 @@ export function formatPrice(value: number): string {
  */
 export function formatOnChainPrice(scaled: string | undefined, decimals = 8): string {
   if (!scaled || !/^-?\d+$/.test(scaled)) return "—";
-  // Parse via BigInt so int256 values beyond 2^53 don't lose precision, then
-  // build the human value from the integer + fractional parts.
+  // Split the digit string at the decimal point instead of Number(scaled)/1e8,
+  // which would overflow for int256 values far beyond Number's safe range.
   const negative = scaled.startsWith("-");
   const digits = (negative ? scaled.slice(1) : scaled).padStart(decimals + 1, "0");
   const whole = digits.slice(0, digits.length - decimals);

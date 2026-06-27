@@ -22,6 +22,9 @@ export function cached<T>(
   now: () => number = Date.now,
 ): Promise<T> {
   const hit = store.get(key);
+  // The store is heterogeneous (one Map keyed by string), so the value type is
+  // erased to Promise<unknown>; the generic `cached<T>` re-applies the caller's
+  // type. This is the one unavoidable cast — there's no per-key generic Map.
   if (hit && hit.expires > now()) return hit.promise as Promise<T>;
 
   const promise = fn();
