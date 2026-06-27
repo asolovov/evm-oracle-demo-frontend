@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getRequestStatusAction } from "@/app/requests/[reqId]/_actions/get-request-status";
 import { explorerTx } from "@/config/chain";
+import { resolveAsset } from "@/config/contracts";
 import type { RequestSummary } from "@/lib/api/schemas";
 import { formatOnChainPrice, shorten } from "@/lib/format";
 
@@ -198,7 +199,10 @@ export function RequestStatus({
 
   const fulfilled = summary?.status === "fulfilled";
   const failed = summary?.status === "failed";
-  const symbol = summary?.asset_id ? summary.asset_id.toUpperCase() : "—";
+  // The request summary's asset_id is the on-chain bytes32; resolve it back to a
+  // canonical id + symbol for display and for the back-link route.
+  const asset = summary?.asset_id ? resolveAsset(summary.asset_id) : undefined;
+  const symbol = asset?.symbol ?? (summary?.asset_id ? shorten(summary.asset_id) : "—");
 
   const backStyle = {
     display: "inline-block",
@@ -211,8 +215,8 @@ export function RequestStatus({
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto" }}>
-      {summary?.asset_id ? (
-        <Link href={`/assets/${summary.asset_id}`} className="lh-nav" style={backStyle}>
+      {asset ? (
+        <Link href={`/assets/${asset.id}`} className="lh-nav" style={backStyle}>
           ← cd ../{symbol}
         </Link>
       ) : (
