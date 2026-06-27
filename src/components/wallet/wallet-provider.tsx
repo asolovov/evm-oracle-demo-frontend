@@ -17,6 +17,16 @@ export type SendTxInput = { to: string; data: string; value: string };
 
 export type ConnectResult = { address: string | null; chainId: number | null };
 
+/**
+ * Remembers a manual disconnect so we don't silently auto-reconnect on reload
+ * (EIP-1193 has no real "disconnect" — this is a UI-level session flag).
+ */
+const DISCONNECT_KEY = "lh-wallet-disconnected";
+
+function isManuallyDisconnected(): boolean {
+  return typeof window !== "undefined" && localStorage.getItem(DISCONNECT_KEY) === "1";
+}
+
 export type WalletState = {
   /** True once we've checked for an injected wallet on the client. */
   ready: boolean;
@@ -34,6 +44,8 @@ export type WalletState = {
   connect: () => Promise<ConnectResult>;
   /** Switches to the target chain and resolves to whether we ended up on it. */
   switchToTargetChain: () => Promise<boolean>;
+  /** Forgets the connected account (UI-level disconnect; sticky across reload). */
+  disconnect: () => void;
   /** Sends a prebuilt transaction and resolves to the tx hash. */
   sendTransaction: (tx: SendTxInput) => Promise<string>;
 };
@@ -59,8 +71,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const client = createWalletClient({ transport: custom(provider) });
     let cancelled = false;
 
-    // Restore any already-authorized session without prompting.
+    // Restore any already-authorized session without prompting — unless the user
+    // manually disconnected (then wait for an explicit reconnect).
     void (async () => {
+      if (isManuallyDisconnected()) return;
       try {
         const [accounts, id] = await Promise.all([client.getAddresses(), client.getChainId()]);
         if (cancelled) return;
@@ -103,6 +117,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const accounts = await client.requestAddresses();
       const id = await client.getChainId();
       const account = accounts[0] ?? null;
+      if (typeof window !== "undefined") localStorage.removeItem(DISCONNECT_KEY);
       setAddress(account);
       setChainId(id);
       return { address: account, chainId: id };
@@ -139,6 +154,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const disconnect = useCallback(() => {
+    // EIP-1193 has no real disconnect; forget the account locally and remember
+    // the choice so we don't auto-reconnect on the next load.
+    if (typeof window !== "undefined") localStorage.setItem(DISCONNECT_KEY, "1");
+    setAddress(null);
+    setError(null);
+  }, []);
+
   const sendTransaction = useCallback(
     async (tx: SendTxInput) => {
       const provider = getInjectedProvider();
@@ -169,6 +192,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       error,
       connect,
       switchToTargetChain,
+      disconnect,
       sendTransaction,
     }),
     [
@@ -180,6 +204,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       error,
       connect,
       switchToTargetChain,
+      disconnect,
       sendTransaction,
     ],
   );
