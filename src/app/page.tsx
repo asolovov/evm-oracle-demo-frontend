@@ -1,8 +1,15 @@
 import { Dashboard, type ServerStats } from "@/components/features/dashboard";
 import { type BootInfo, LiveTerminal } from "@/components/features/live-terminal";
+import { env } from "@/env";
 import { getAssets, getSubmissions } from "@/lib/api/oracle";
 import type { AssetSummary } from "@/lib/api/schemas";
-import { getAllLatestRounds, getLatestBlock, getReporterSet } from "@/lib/chain/reads";
+import {
+  getAllLatestRounds,
+  getLatestBlock,
+  getReporterFunding,
+  getReporterSet,
+} from "@/lib/chain/reads";
+import { buildReporterFunds, type ReporterFund } from "@/lib/reporter-funding";
 import { submissionToLine, type TerminalLine } from "@/lib/terminal-line";
 
 // Prices are live; never statically cache this route.
@@ -33,10 +40,13 @@ export default async function LandingPage() {
   }
 
   let seed: TerminalLine[] = [];
+  let sampleTxHash: string | undefined;
   try {
     const { submissions } = await getSubmissions({ pageSize: 12 });
     // Newest-first from the API → reverse so the newest sits at the bottom.
     seed = submissions.map(submissionToLine).reverse();
+    // A real confirmed fulfilment, to measure the average tx cost from its receipt.
+    sampleTxHash = submissions.find((s) => s.status === "confirmed" && s.tx_hash)?.tx_hash;
   } catch {
     seed = [];
   }
@@ -46,6 +56,20 @@ export default async function LandingPage() {
     getAllLatestRounds(),
     getLatestBlock(),
   ]);
+
+  // Reporter funding runway (depends on the reporter set).
+  const funding = reporterSet
+    ? await getReporterFunding(reporterSet.reporters, sampleTxHash)
+    : null;
+  const reporterFunds: ReporterFund[] =
+    funding && reporterSet
+      ? buildReporterFunds(
+          reporterSet.reporters.map((a) => ({ address: a, balanceWei: funding.balances[a] ?? 0n })),
+          funding.avgTxCostWei,
+          env.REPORTER_WARN_TXS,
+          env.REPORTER_RED_TXS,
+        )
+      : [];
 
   const totalRequests = Object.values(allRounds).reduce((sum, r) => sum + Number(r.nextReqId), 0);
   const blockStr = block !== null ? block.toString() : null;
@@ -115,7 +139,7 @@ export default async function LandingPage() {
             on-chain. <span style={{ color: "var(--ac)" }}>On-chain truth</span>, off-chain speed —
             verifiable to the round.
           </p>
-          <LiveTerminal boot={boot} seed={seed} />
+          <LiveTerminal boot={boot} seed={seed} reporterFunds={reporterFunds} />
         </div>
 
         <div style={{ flexShrink: 0, position: "relative", padding: "18px 10px" }}>

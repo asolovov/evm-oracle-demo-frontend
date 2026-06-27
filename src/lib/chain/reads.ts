@@ -1,8 +1,9 @@
 import "server-only";
-import type { Address } from "viem";
-import { ASSETS, getAggregator, REPORTER_SET } from "@/config/contracts";
+import { type Address, isHex } from "viem";
+import { ASSETS, getAggregator, MULTICALL3, REPORTER_SET } from "@/config/contracts";
 import { chainReadClient } from "@/lib/chain/server-client";
 import { cached } from "@/lib/chain/ttl-cache";
+import { multicall3Abi } from "@/lib/contracts/multicall3";
 import { priceAggregatorReadsAbi } from "@/lib/contracts/price-aggregator-reads";
 import { reporterSetAbi } from "@/lib/contracts/reporter-set";
 
@@ -11,6 +12,9 @@ const abi = priceAggregatorReadsAbi;
 // TTLs: live data refreshes ~per block; the reporter set is effectively static.
 const LIVE_TTL = 12_000;
 const STATIC_TTL = 3_600_000;
+
+/** Representative gas for a fulfillPrice tx, used when no real receipt is on hand. */
+const DEFAULT_FULFILL_GAS = 130_000n;
 
 export type OnChainFeed = {
   roundId: bigint;
@@ -152,4 +156,58 @@ export function getAllLatestRounds(): Promise<Record<string, LatestRound>> {
 /** Latest block number (1 request). Null on RPC error. */
 export function getLatestBlock(): Promise<bigint | null> {
   return cached("block", LIVE_TTL, () => chainReadClient.getBlockNumber()).catch(() => null);
+}
+
+export type ReporterFunding = {
+  /** Reporter address → native balance (wei). */
+  balances: Record<string, bigint>;
+  /** Average fulfillPrice cost (wei) = representative gas × live gas price. */
+  avgTxCostWei: bigint;
+};
+
+async function fetchReporterFunding(
+  reporters: readonly Address[],
+  sampleTxHash?: string,
+): Promise<ReporterFunding> {
+  // All balances in one Multicall3 batch.
+  const balResults = await chainReadClient.multicall({
+    allowFailure: true,
+    contracts: reporters.map((r) => ({
+      address: MULTICALL3,
+      abi: multicall3Abi,
+      functionName: "getEthBalance" as const,
+      args: [r] as const,
+    })),
+  });
+  const balances: Record<string, bigint> = {};
+  reporters.forEach((r, i) => {
+    const res = balResults[i];
+    balances[r] = res?.status === "success" ? res.result : 0n;
+  });
+
+  // Average tx cost = representative fulfillPrice gas × live gas price. Use a
+  // real recent fulfilment receipt's gasUsed when one is available.
+  const gasPrice = await chainReadClient.getGasPrice();
+  let gasUsed = DEFAULT_FULFILL_GAS;
+  if (sampleTxHash && isHex(sampleTxHash)) {
+    try {
+      const receipt = await chainReadClient.getTransactionReceipt({ hash: sampleTxHash });
+      if (receipt.gasUsed > 0n) gasUsed = receipt.gasUsed;
+    } catch {
+      // No receipt (RPC/pruned) — keep the representative default.
+    }
+  }
+
+  return { balances, avgTxCostWei: gasUsed * gasPrice };
+}
+
+/** Reporter balances + average tx cost (for funding runway). Null on RPC error. */
+export function getReporterFunding(
+  reporters: readonly Address[],
+  sampleTxHash?: string,
+): Promise<ReporterFunding | null> {
+  const key = `funding:${reporters.join(",")}:${sampleTxHash ?? ""}`;
+  return cached(key, LIVE_TTL, () => fetchReporterFunding(reporters, sampleTxHash)).catch(
+    () => null,
+  );
 }

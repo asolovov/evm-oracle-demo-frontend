@@ -10,6 +10,13 @@ export const env = createEnv({
      * Sepolia node.
      */
     RPC_URL: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
+    /**
+     * Reporter-funding alert thresholds, expressed in *transactions of runway*
+     * (balance ÷ average fulfillPrice cost). Amber under WARN, red under RED.
+     * Defaults: warn at 10 txs, red at 5.
+     */
+    REPORTER_WARN_TXS: z.coerce.number().int().positive().default(10),
+    REPORTER_RED_TXS: z.coerce.number().int().positive().default(5),
   },
   client: {
     /** Base URL of the Go BFF (`evm-oracle-demo-api`). Used by the server-side API client. */
