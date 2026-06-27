@@ -103,9 +103,9 @@ Multi-stage build producing a Next.js standalone server on Node 22 Alpine.
 
 ## Known gaps
 
-- **Price chart is a synthetic preview.** The BFF's `/assets/{id}/history` returns
-  501 in v1 (no history RPC yet), so the chart renders a deterministic illustrative
-  series, labeled as such. It activates for real once the upstream RPC ships.
+- **Price chart is a synthetic preview.** The API exposes no price-history
+  endpoint, so the chart renders a deterministic illustrative series (final point
+  anchored to the real current price), labeled as such in the UI.
 - Headshot on `/about` is a placeholder until the asset is provided.
 
 ## License

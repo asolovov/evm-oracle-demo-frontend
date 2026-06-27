@@ -14,9 +14,10 @@ import { formatPrice } from "@/lib/format";
 const RANGES: ChartRange[] = ["24h", "7d", "30d"];
 
 /**
- * Aggregated-price chart with range toggles. The history feed is not yet wired
- * (BFF returns 501), so the series is an illustrative shape seeded from the asset
- * id + range. Labeled in the UI so it is never mistaken for real history.
+ * Aggregated-price chart with range toggles. The API has no price-history feed,
+ * so the series is an illustrative shape seeded from the asset id + range, with
+ * the final point anchored to the real current price. Labeled in the UI so it is
+ * never mistaken for real history.
  */
 export function PriceChart({
   assetId,
@@ -63,7 +64,7 @@ export function PriceChart({
         <span style={{ fontSize: 11, letterSpacing: "2px", color: "var(--fg-dim)" }}>
           AGGREGATED PRICE — {symbol}/USD
           <span style={{ color: "var(--fg-faint)", marginLeft: 10, letterSpacing: "1px" }}>
-            (synthetic preview · history feed pending)
+            (synthetic preview · illustrative only)
           </span>
         </span>
         <div style={{ display: "flex", gap: 6 }}>

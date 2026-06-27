@@ -38,13 +38,6 @@ export const handlers = [
     );
   }),
 
-  http.get("*/api/v1/assets/:id/history", () =>
-    HttpResponse.json(
-      { code: "not_implemented", message: "history endpoint not yet implemented" },
-      { status: 501 },
-    ),
-  ),
-
   http.get("*/api/v1/requests/:reqId", ({ params }) => {
     const reqId = String(params.reqId);
     return HttpResponse.json(makeRequestSummary({ req_id: reqId }));

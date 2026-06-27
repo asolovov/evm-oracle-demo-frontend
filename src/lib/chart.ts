@@ -1,11 +1,9 @@
 /**
  * Deterministic synthetic price series + SVG path geometry. Pure, unit-tested.
  *
- * The BFF's `/api/v1/assets/{id}/history` endpoint returns 501 in v1 (no
- * upstream history RPC yet — see docs/api/openapi.yaml). Until it ships, the
- * drill-down chart renders an *illustrative* series seeded from the asset id so
- * it is stable across renders. The UI labels it as a synthetic preview; it must
- * never be presented as real history.
+ * The API exposes no price-history endpoint, so the drill-down chart renders an
+ * *illustrative* series seeded from the asset id (stable across renders). The UI
+ * labels it as a synthetic preview; it must never be presented as real history.
  */
 
 /** FNV-1a hash → unsigned 32-bit, for stable per-asset seeding. */

@@ -2,8 +2,8 @@ import { hashSeed, pathGeometry, RANGE_VOL, synthSeries } from "@/lib/chart";
 
 /**
  * Small decorative trend sparkline. Seeded deterministically from the asset id —
- * the BFF has no price-history feed in v1 (history RPC returns 501), so this is
- * an illustrative shape, not real data. No axes or numbers are shown.
+ * the API has no price-history feed, so this is an illustrative shape, not real
+ * data. No axes or numbers are shown.
  */
 export function Sparkline({ seed, base }: { seed: string; base: number }) {
   const w = 130;
