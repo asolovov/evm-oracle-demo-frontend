@@ -27,6 +27,8 @@ export const env = createEnv({
     NEXT_PUBLIC_EXPLORER_URL: z.string().url().default("https://sepolia.etherscan.io"),
     /** Upwork profile URL. The footer/about Upwork link renders only when set (OQ-09). */
     NEXT_PUBLIC_UPWORK_URL: z.string().url().optional(),
+    /** Canonical site URL — used as the metadata base for OG/canonical links. */
+    NEXT_PUBLIC_SITE_URL: z.string().url().default("https://oracle-demo-orcin.vercel.app"),
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -35,6 +37,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
     NEXT_PUBLIC_EXPLORER_URL: process.env.NEXT_PUBLIC_EXPLORER_URL,
     NEXT_PUBLIC_UPWORK_URL: process.env.NEXT_PUBLIC_UPWORK_URL,
+    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   emptyStringAsUndefined: true,
 });
