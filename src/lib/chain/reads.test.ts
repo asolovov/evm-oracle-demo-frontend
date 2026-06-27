@@ -5,6 +5,8 @@ import { ASSETS } from "@/config/contracts";
 const mockClient = vi.hoisted(() => ({
   multicall: vi.fn<(args: unknown) => Promise<unknown>>(),
   getBlockNumber: vi.fn<() => Promise<bigint>>(),
+  getGasPrice: vi.fn<() => Promise<bigint>>(),
+  getTransactionReceipt: vi.fn<(args: unknown) => Promise<{ gasUsed: bigint }>>(),
 }));
 vi.mock("@/lib/chain/server-client", () => ({ chainReadClient: mockClient }));
 
@@ -13,6 +15,7 @@ import {
   getLatestBlock,
   getOnChainFeed,
   getRecentRounds,
+  getReporterFunding,
   getReporterSet,
 } from "@/lib/chain/reads";
 import { clearCache } from "@/lib/chain/ttl-cache";
@@ -149,5 +152,37 @@ describe("getLatestBlock", () => {
   it("degrades to null on error", async () => {
     mockClient.getBlockNumber.mockRejectedValueOnce(new Error("down"));
     expect(await getLatestBlock()).toBeNull();
+  });
+});
+
+describe("getReporterFunding", () => {
+  const A = "0xaaaa000000000000000000000000000000000001" as const;
+  const B = "0xbbbb000000000000000000000000000000000002" as const;
+
+  it("reads balances (1 multicall) + avg cost from a real receipt's gasUsed", async () => {
+    mockClient.multicall.mockResolvedValueOnce([
+      { status: "success", result: 5n * 10n ** 16n },
+      { status: "success", result: 10n * 10n ** 16n },
+    ]);
+    mockClient.getGasPrice.mockResolvedValueOnce(2n * 10n ** 9n);
+    mockClient.getTransactionReceipt.mockResolvedValueOnce({ gasUsed: 100_000n });
+    const f = await getReporterFunding([A, B], `0x${"a".repeat(64)}`);
+    expect(f?.balances[A]).toBe(5n * 10n ** 16n);
+    expect(f?.avgTxCostWei).toBe(100_000n * 2n * 10n ** 9n);
+    expect(mockClient.multicall).toHaveBeenCalledTimes(1);
+    expect(mockClient.getTransactionReceipt).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the default gas when there is no sample tx", async () => {
+    mockClient.multicall.mockResolvedValueOnce([{ status: "success", result: 1n }]);
+    mockClient.getGasPrice.mockResolvedValueOnce(1n);
+    const f = await getReporterFunding([A]);
+    expect(f?.avgTxCostWei).toBe(130_000n);
+    expect(mockClient.getTransactionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("degrades to null on RPC error", async () => {
+    mockClient.multicall.mockRejectedValueOnce(new Error("down"));
+    expect(await getReporterFunding([A])).toBeNull();
   });
 });

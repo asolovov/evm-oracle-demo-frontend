@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useLiveStream } from "@/hooks/use-live-stream";
+import type { ReporterFund } from "@/lib/reporter-funding";
 import { eventToLine, priceToLine, type TerminalLine } from "@/lib/terminal-line";
 
 const MAX_LINES = 60;
@@ -13,6 +14,13 @@ export type BootInfo = {
   block: string | null;
   assetCount: number;
 };
+
+const FUND_TONE_COLOR: Record<ReporterFund["tone"], string> = {
+  ok: "var(--good)",
+  warn: "var(--ac)",
+  red: "var(--bad)",
+};
+const FUND_TAG: Record<ReporterFund["tone"], string> = { ok: "OK", warn: "LOW", red: "CRIT" };
 
 const TONE_COLOR: Record<TerminalLine["tone"], string> = {
   price: "var(--ac)",
@@ -38,7 +46,15 @@ function bootLines(boot: BootInfo, connected: boolean): string[] {
  * genuine live tail of the WS stream, seeded with recent submissions so it's
  * never empty. Event lines link to their request status page.
  */
-export function LiveTerminal({ boot, seed }: { boot: BootInfo; seed: TerminalLine[] }) {
+export function LiveTerminal({
+  boot,
+  seed,
+  reporterFunds = [],
+}: {
+  boot: BootInfo;
+  seed: TerminalLine[];
+  reporterFunds?: ReporterFund[];
+}) {
   const [lines, setLines] = useState<TerminalLine[]>(seed);
   const [reveal, setReveal] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -140,6 +156,32 @@ export function LiveTerminal({ boot, seed }: { boot: BootInfo; seed: TerminalLin
           />
         ) : null}
       </pre>
+
+      {/* Reporter funding (real on-chain balances + runway) */}
+      {reporterFunds.length > 0 ? (
+        <div
+          style={{
+            padding: "0 16px 10px",
+            fontFamily: "inherit",
+            fontSize: 12,
+            lineHeight: 1.7,
+          }}
+        >
+          {reporterFunds.map((r) => (
+            <div key={r.address} style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
+              <span style={{ color: "var(--fg-dim)", flexShrink: 0 }}>{"> reporter"}</span>
+              <span style={{ color: "var(--fg-muted)" }}>{r.addressShort}</span>
+              <span style={{ color: "var(--fg)", marginLeft: "auto" }}>{r.balanceEth} ETH</span>
+              <span style={{ color: "var(--fg-dim)", width: 72, textAlign: "right" }}>
+                ~{r.remainingTxs} tx
+              </span>
+              <span style={{ color: FUND_TONE_COLOR[r.tone], width: 44, textAlign: "right" }}>
+                [{FUND_TAG[r.tone]}]
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {/* Live tail */}
       <div

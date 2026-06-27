@@ -42,7 +42,7 @@ export function DemoBanner() {
     >
       <span style={{ flexShrink: 0, fontWeight: 700 }}>⚠ DEMO</span>
       <span style={{ color: "var(--fg-muted)", letterSpacing: "1px", flex: 1, minWidth: 0 }}>
-        RUNNING ON TESTNETS · REPORTER KEYS ARE ON-DISK · DO NOT USE IN PRODUCTION
+        RUNNING ON TESTNETS · DO NOT USE IN PRODUCTION
       </span>
       <button
         type="button"
