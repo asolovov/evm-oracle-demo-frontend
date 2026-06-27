@@ -7,10 +7,9 @@ import { WalletProvider } from "@/components/wallet/wallet-provider";
 // RequestButton calls useRouter at render; provide a stub outside Next runtime.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-// Avoid invoking the real server action / RPC in this unit test.
-vi.mock("@/app/assets/[id]/_actions/build-request-tx", () => ({
-  buildRequestTxAction: vi.fn(),
-}));
+// Avoid invoking the real calldata builder / RPC in this unit test.
+vi.mock("@/lib/wallet/build-request-tx", () => ({ buildRequestTx: vi.fn() }));
+vi.mock("@/lib/wallet/estimate", () => ({ estimateRequestGas: vi.fn() }));
 vi.mock("@/lib/wallet/request-receipt", () => ({ waitForRequestId: vi.fn() }));
 
 function renderButton() {

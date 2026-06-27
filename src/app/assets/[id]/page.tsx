@@ -7,6 +7,7 @@ import { PriceChart } from "@/components/features/price-chart";
 import { RequestButton } from "@/components/features/request-button";
 import { SourceBreakdown } from "@/components/features/source-breakdown";
 import { explorerAddress } from "@/config/chain";
+import { getAggregator } from "@/config/contracts";
 import { ApiError } from "@/lib/api/errors";
 import { getAssetPrice, getSubmissions } from "@/lib/api/oracle";
 import type { PriceDetail, SubmissionStatus } from "@/lib/api/schemas";
@@ -56,7 +57,9 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
 
   const { asset, aggregated_price } = detail;
   const price = aggregated_price.median_price;
-  const aggregator = asset.aggregator_address;
+  // Prefer the deployment-config address (always known) over the BFF's field,
+  // which depends on the indexer having observed the registration.
+  const aggregator = getAggregator(asset.id) ?? asset.aggregator_address;
   // Request-time timestamp for relative ages; fine in an async Server Component.
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
@@ -121,7 +124,7 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             </span>
           </div>
         </div>
-        <RequestButton assetId={asset.id} aggregatorKnown={Boolean(aggregator)} />
+        <RequestButton assetId={asset.id} aggregatorKnown={Boolean(getAggregator(asset.id))} />
       </div>
 
       <PriceChart assetId={asset.id} symbol={asset.symbol} base={price} />

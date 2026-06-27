@@ -38,9 +38,12 @@ author/credentials page. A CRT/terminal aesthetic ties it together.
 - **Client islands** handle realtime + interactivity only: the live WS stream
   (`src/hooks/use-live-stream.ts`), wallet connection (`src/components/wallet/`,
   viem over EIP-1193), and request polling.
-- **Calldata is built server-side** by the BFF (`POST /api/v1/requests/build-tx`);
-  the browser signs and broadcasts it, then reads `reqId` from the receipt's
-  `PriceRequested` log.
+- **Calldata is built in the browser** — `requestPrice()` is ABI-encoded against
+  the asset's aggregator (addresses + ABI from the contracts deployment, in
+  `src/config/contracts.ts` / `src/lib/contracts/`), the `requestFee` is read
+  on-chain for `msg.value`, then the wallet signs/broadcasts and we read `reqId`
+  from the receipt's `PriceRequested` log. No BFF round-trip for the write path,
+  so it doesn't depend on the indexer having observed the registration.
 - **API contract** lives in [`docs/api/openapi.yaml`](./docs/api/openapi.yaml)
   (copied from `evm-oracle-demo-api`) — the source of truth for the REST surface.
 

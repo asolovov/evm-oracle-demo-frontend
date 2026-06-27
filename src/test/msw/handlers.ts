@@ -1,13 +1,10 @@
 import { HttpResponse, http } from "msw";
-import { z } from "zod";
 import {
   ASSET_CATALOG,
   makePriceDetail,
   makeRequestSummary,
   makeSubmission,
 } from "@/test/fixtures";
-
-const buildTxBodySchema = z.object({ asset_id: z.string().optional() });
 
 /**
  * Default handlers for the `evm-oracle-demo-api` BFF (see docs/api/openapi.yaml).
@@ -51,25 +48,6 @@ export const handlers = [
   http.get("*/api/v1/requests/:reqId", ({ params }) => {
     const reqId = String(params.reqId);
     return HttpResponse.json(makeRequestSummary({ req_id: reqId }));
-  }),
-
-  http.post("*/api/v1/requests/build-tx", async ({ request }) => {
-    const body = buildTxBodySchema.safeParse(await request.json());
-    const assetId = body.success ? body.data.asset_id : undefined;
-    const known = ASSET_CATALOG.find((a) => a.id === assetId);
-    if (!known) {
-      return HttpResponse.json(
-        { code: "asset_not_tracked", message: "asset is not tracked" },
-        { status: 404 },
-      );
-    }
-    return HttpResponse.json({
-      to: known.aggregator_address ?? "0x0000000000000000000000000000000000000000",
-      data: "0xdeadbeef",
-      value: "0",
-      chain_id: 11155111,
-      chain_name: "ethereum-sepolia",
-    });
   }),
 
   http.get("*/api/v1/submissions", () =>

@@ -3,8 +3,6 @@ import { api } from "@/lib/api/client";
 import {
   type AssetsResponse,
   assetsResponseSchema,
-  type BuildTxResponse,
-  buildTxResponseSchema,
   type PriceDetail,
   priceDetailSchema,
   type RequestSummary,
@@ -53,13 +51,5 @@ export function getSubmissions(params?: {
       page: params?.page,
       page_size: params?.pageSize,
     },
-  });
-}
-
-/** POST /api/v1/requests/build-tx — ABI-encoded `requestPrice` calldata to sign. */
-export function buildRequestTx(assetId: string, chainId?: number): Promise<BuildTxResponse> {
-  return api.post("/api/v1/requests/build-tx", buildTxResponseSchema, {
-    asset_id: assetId,
-    ...(chainId !== undefined ? { chain_id: chainId } : {}),
   });
 }

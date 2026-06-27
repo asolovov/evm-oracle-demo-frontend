@@ -1,7 +1,7 @@
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/errors";
-import { buildRequestTx, getAssetPrice, getAssets, getSubmissions } from "@/lib/api/oracle";
+import { getAssetPrice, getAssets, getSubmissions } from "@/lib/api/oracle";
 import { server } from "@/test/msw/server";
 
 describe("oracle API access", () => {
@@ -22,13 +22,6 @@ describe("oracle API access", () => {
   it("getAssetPrice throws a typed 404 for an unknown asset", async () => {
     await expect(getAssetPrice("nope")).rejects.toBeInstanceOf(ApiError);
     await expect(getAssetPrice("nope")).rejects.toMatchObject({ status: 404 });
-  });
-
-  it("buildRequestTx returns the calldata tuple", async () => {
-    const tx = await buildRequestTx("weth", 11155111);
-    expect(tx.to).toMatch(/^0x/);
-    expect(tx.data).toBe("0xdeadbeef");
-    expect(tx.chain_id).toBe(11155111);
   });
 
   it("getSubmissions parses a page", async () => {

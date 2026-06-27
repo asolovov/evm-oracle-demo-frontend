@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { buildRequestTxAction } from "@/app/assets/[id]/_actions/build-request-tx";
 import { useWallet } from "@/components/wallet/wallet-provider";
 import { CHAIN, explorerTx } from "@/config/chain";
+import { buildRequestTx } from "@/lib/wallet/build-request-tx";
 import { estimateRequestGas } from "@/lib/wallet/estimate";
 import { waitForRequestId } from "@/lib/wallet/request-receipt";
 
@@ -30,9 +30,9 @@ export function RequestButton({
 }: {
   assetId: string;
   /**
-   * Whether the BFF has resolved this asset's aggregator address. When false,
-   * `build-tx` will 503 (`aggregator_not_resolved`) — surface that up front
-   * instead of letting the user click into a guaranteed failure.
+   * Whether an aggregator address is configured for this asset (it always is for
+   * the deployed set). When false, the request can't be built — surface that up
+   * front instead of letting the user click into a failure.
    */
   aggregatorKnown?: boolean;
 }) {
@@ -74,20 +74,15 @@ export function RequestButton({
     }
 
     try {
-      // 3. Build calldata via the BFF.
+      // 3. Build calldata client-side: encode requestPrice() against the asset's
+      // aggregator and read its requestFee for msg.value.
       setPhase("building");
-      const result = await buildRequestTxAction({ assetId });
-      const tx = result?.data;
-      if (!tx) {
+      let tx: { to: string; data: string; value: string };
+      try {
+        tx = await buildRequestTx(assetId);
+      } catch (err) {
         setPhase("error");
-        setMessage(result?.serverError ?? "Could not build the transaction.");
-        return;
-      }
-
-      // Defensive: never sign a tx the BFF built for a different chain.
-      if (tx.chain_id !== CHAIN.id) {
-        setPhase("error");
-        setMessage(`Chain mismatch: the API targeted chain ${tx.chain_id}, expected ${CHAIN.id}.`);
+        setMessage(err instanceof Error ? err.message : "Could not prepare the request.");
         return;
       }
 
@@ -137,7 +132,7 @@ export function RequestButton({
         disabled={busy || !aggregatorKnown}
         className="lh-btn"
         style={{ fontSize: 13, padding: "13px 22px" }}
-        title={aggregatorKnown ? undefined : "Aggregator not indexed yet"}
+        title={aggregatorKnown ? undefined : "No aggregator configured for this asset"}
       >
         {PHASE_LABEL[phase]}
       </button>
@@ -151,8 +146,7 @@ export function RequestButton({
             textAlign: "right",
           }}
         >
-          ⚠ Aggregator not indexed yet — on-chain requests are unavailable until the indexer catches
-          up.
+          ⚠ On-chain requests are not available for this asset.
         </span>
       ) : null}
       {message ? (
