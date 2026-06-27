@@ -5,6 +5,7 @@ import { useState } from "react";
 import { buildRequestTxAction } from "@/app/assets/[id]/_actions/build-request-tx";
 import { useWallet } from "@/components/wallet/wallet-provider";
 import { CHAIN, explorerTx } from "@/config/chain";
+import { estimateRequestGas } from "@/lib/wallet/estimate";
 import { waitForRequestId } from "@/lib/wallet/request-receipt";
 
 type Phase = "idle" | "building" | "signing" | "mining" | "error" | "done";
@@ -87,6 +88,19 @@ export function RequestButton({
       if (tx.chain_id !== CHAIN.id) {
         setPhase("error");
         setMessage(`Chain mismatch: the API targeted chain ${tx.chain_id}, expected ${CHAIN.id}.`);
+        return;
+      }
+
+      // 3b. Pre-flight: a tx that would revert fails estimation. Catch it here so
+      // the user gets a clear message instead of the wallet broadcasting a doomed
+      // tx and surfacing a cryptic "gas limit too high" / internal RPC error.
+      try {
+        await estimateRequestGas({ to: tx.to, data: tx.data, value: tx.value, account: address });
+      } catch {
+        setPhase("error");
+        setMessage(
+          "This request would fail on-chain and was not sent. The feed may be misconfigured — try again later.",
+        );
         return;
       }
 
