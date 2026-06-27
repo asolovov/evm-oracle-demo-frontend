@@ -1,6 +1,7 @@
 import type { AssetTileData } from "@/components/features/asset-tile";
 import type { AssetSummary, SourceContribution } from "@/lib/api/schemas";
 import { ageSecondsSince, formatAge, formatPrice } from "@/lib/format";
+import { normalizedPositions, spreadLabel } from "@/lib/source-stats";
 
 /** Per-source ages in seconds, preferring the server-reported `age_sec`. */
 export function sourceAges(sources: SourceContribution[], now: number = Date.now()): number[] {
@@ -13,6 +14,9 @@ export function sourceAges(sources: SourceContribution[], now: number = Date.now
 export function toTileData(summary: AssetSummary, now: number = Date.now()): AssetTileData {
   const price = summary.latest_price;
   const sources = price?.sources ?? [];
+  // Real "source agreement" viz: prefer the sources that made the median.
+  const included = sources.filter((s) => s.included);
+  const vizPrices = (included.length >= 2 ? included : sources).map((s) => s.price);
   return {
     id: summary.id,
     symbol: summary.symbol,
@@ -24,6 +28,7 @@ export function toTileData(summary: AssetSummary, now: number = Date.now()): Ass
       ? `${formatAge(ageSecondsSince(summary.last_on_chain_at, now))} ago`
       : "never",
     offChainAgeStr: price ? `${formatAge(ageSecondsSince(price.aggregated_at, now))} ago` : "—",
-    sparkBase: price?.median_price ?? 1,
+    spreadStr: price ? spreadLabel(vizPrices, price.median_price) : "—",
+    sourcePoints: price ? normalizedPositions(vizPrices) : [],
   };
 }

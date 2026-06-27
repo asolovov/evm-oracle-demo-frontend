@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FreshnessDots } from "@/components/features/freshness-dots";
-import { Sparkline } from "@/components/features/sparkline";
 
 export type AssetTileData = {
   id: string;
@@ -12,8 +11,10 @@ export type AssetTileData = {
   sourceCount: number;
   onChainAgeStr: string;
   offChainAgeStr: string;
-  /** Median price (or 1) used only to seed the decorative sparkline. */
-  sparkBase: number;
+  /** Compact source-spread label, e.g. "0.04% spread" or "—". */
+  spreadStr: string;
+  /** Each source price's normalized position in [0,1] for the agreement track. */
+  sourcePoints: number[];
 };
 
 /** A single asset feed tile on the dashboard. Presentational. */
@@ -79,12 +80,53 @@ export function AssetTile({ data, animate = true }: { data: AssetTileData; anima
         </span>
       </div>
 
-      {/* Reserved slot preserving the design's vertical rhythm (the per-tile
-          change % from the design isn't available from the API). */}
-      <div style={{ height: 14, marginBottom: 14 }} />
-
-      <div style={{ margin: "0 -2px 14px" }}>
-        <Sparkline seed={data.id} base={data.sparkBase} />
+      {/* Real "source agreement" viz: each live source price as a dot on the
+          [min,max] span; tight cluster = sources agree. Replaces the old
+          synthetic sparkline. */}
+      <div style={{ marginBottom: 14 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: 9,
+            letterSpacing: "1px",
+            color: "var(--fg-dim)",
+            marginBottom: 7,
+          }}
+        >
+          <span>SOURCE AGREEMENT</span>
+          <span style={{ color: "var(--fg-muted)" }}>{data.spreadStr}</span>
+        </div>
+        <div style={{ position: "relative", height: 9 }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "var(--acd)",
+            }}
+          />
+          {data.sourcePoints.map((p, i) => (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: dots are positional, no stable id
+              key={i}
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: `${p * 100}%`,
+                width: 7,
+                height: 7,
+                marginLeft: -3.5,
+                marginTop: -3.5,
+                borderRadius: "50%",
+                background: "var(--ac)",
+                boxShadow: "0 0 6px var(--acg)",
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <div

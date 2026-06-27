@@ -1,6 +1,12 @@
+import Link from "next/link";
 import { explorerTx } from "@/config/chain";
 import type { SubmissionStatus } from "@/lib/api/schemas";
 import { ageSecondsSince, formatAge, formatOnChainPrice, shorten } from "@/lib/format";
+
+/** Consumer requests have a numeric req_id and a status page; heartbeats are "0". */
+function isConsumerRequest(reqId: string): boolean {
+  return reqId !== "0" && /^\d+$/.test(reqId);
+}
 
 const STATUS_COLOR: Record<string, string> = {
   confirmed: "var(--good)",
@@ -70,7 +76,16 @@ export function OnChainRounds({
               }}
             >
               <span style={{ flex: 1, color: "var(--fg)" }}>
-                {reqLabel}
+                {isConsumerRequest(s.req_id) ? (
+                  <Link
+                    href={`/requests/${s.req_id}`}
+                    style={{ color: "var(--link)", textDecoration: "none" }}
+                  >
+                    #{s.req_id} ↗
+                  </Link>
+                ) : (
+                  reqLabel
+                )}
                 {s.status && s.status !== "confirmed" ? (
                   <span
                     style={{

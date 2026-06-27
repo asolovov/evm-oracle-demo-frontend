@@ -11,7 +11,8 @@ const DATA: AssetTileData = {
   sourceCount: 3,
   onChainAgeStr: "9s ago",
   offChainAgeStr: "2s ago",
-  sparkBase: 3412.88,
+  spreadStr: "0.04% spread",
+  sourcePoints: [0, 0.5, 1],
 };
 
 describe("AssetTile", () => {
@@ -27,5 +28,11 @@ describe("AssetTile", () => {
     render(<AssetTile data={DATA} animate={false} />);
     const link = screen.getByTestId("asset-tile-weth");
     expect(link).toHaveAttribute("href", "/assets/weth");
+  });
+
+  it("shows the real source-agreement spread (no synthetic sparkline)", () => {
+    render(<AssetTile data={DATA} animate={false} />);
+    expect(screen.getByText("SOURCE AGREEMENT")).toBeInTheDocument();
+    expect(screen.getByText("0.04% spread")).toBeInTheDocument();
   });
 });

@@ -3,17 +3,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyButton } from "@/components/features/copy-button";
 import { OnChainRounds } from "@/components/features/on-chain-rounds";
-import { PriceChart } from "@/components/features/price-chart";
+import { OnChainRoundsChain } from "@/components/features/on-chain-rounds-chain";
 import { RequestButton } from "@/components/features/request-button";
-import { SourceBreakdown } from "@/components/features/source-breakdown";
+import { SourceComposition } from "@/components/features/source-composition";
 import { explorerAddress } from "@/config/chain";
-import { getAggregator } from "@/config/contracts";
+import { getAggregator, resolveAsset } from "@/config/contracts";
 import { ApiError } from "@/lib/api/errors";
 import { getAssetPrice, getSubmissions } from "@/lib/api/oracle";
 import type { PriceDetail, SubmissionStatus } from "@/lib/api/schemas";
-import { formatAgeSince, formatOnChainPrice, formatPrice } from "@/lib/format";
+import {
+  getOnChainFeed,
+  getRecentRounds,
+  type OnChainFeed,
+  type OnChainRound,
+} from "@/lib/chain/reads";
+import { formatAge, formatAgeSince, formatOnChainPrice, formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+const MAX_UINT256 = 2n ** 256n - 1n;
 
 export async function generateMetadata({
   params,
@@ -37,6 +45,19 @@ function MiniStat({ k, v }: { k: string; v: string }) {
   );
 }
 
+function Fact({ k, children }: { k: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: "var(--bg-tile)", padding: "14px 16px" }}>
+      <div
+        style={{ fontSize: 10, letterSpacing: "1.5px", color: "var(--fg-dim)", marginBottom: 6 }}
+      >
+        {k}
+      </div>
+      <div style={{ fontSize: 13, color: "var(--fg)", wordBreak: "break-all" }}>{children}</div>
+    </div>
+  );
+}
+
 export default async function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -55,14 +76,31 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
     submissions = [];
   }
 
+  // Read on-chain truth directly (server-side, cached, multicall). Fail-soft.
+  const onchain: OnChainFeed | null = await getOnChainFeed(id);
+  const rounds: OnChainRound[] = onchain ? await getRecentRounds(id, onchain.roundId, 8) : [];
+
   const { asset, aggregated_price } = detail;
-  const price = aggregated_price.median_price;
-  // Prefer the deployment-config address (always known) over the BFF's field,
-  // which depends on the indexer having observed the registration.
+  const median = aggregated_price.median_price;
   const aggregator = getAggregator(asset.id) ?? asset.aggregator_address;
+  const assetIdHash = resolveAsset(asset.id)?.assetId;
+  const decimals = onchain?.decimals ?? 8;
   // Request-time timestamp for relative ages; fine in an async Server Component.
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
+
+  // On-chain answer: prefer the live read, fall back to the BFF's last known.
+  const onChainPriceStr = onchain
+    ? formatOnChainPrice(onchain.answer.toString(), decimals)
+    : formatOnChainPrice(detail.last_on_chain_price, decimals);
+  const onChainRoundStr = onchain
+    ? `#${onchain.roundId.toString()}`
+    : detail.last_round_id
+      ? `#${detail.last_round_id}`
+      : "—";
+  const onChainAgeStr = onchain
+    ? `${formatAge(Math.max(0, Math.floor(now / 1000) - Number(onchain.updatedAt)))} ago`
+    : formatAgeSince(detail.last_on_chain_at);
 
   return (
     <div>
@@ -81,6 +119,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
         ← cd ../assets
       </Link>
 
+      {/* Header: symbol + off-chain median + on-chain answer (the two numbers
+          the oracle reconciles) + request button. */}
       <div
         style={{
           display: "flex",
@@ -112,22 +152,41 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             >
               {asset.symbol}
             </h1>
-            <span
-              style={{
-                fontSize: "clamp(26px,5vw,42px)",
-                fontWeight: 700,
-                color: "var(--ac)",
-                textShadow: "0 0 14px var(--acg)",
-              }}
-            >
-              {formatPrice(price)}
-            </span>
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "baseline" }}>
+              <div>
+                <div style={{ fontSize: 9, letterSpacing: "1px", color: "var(--fg-dim)" }}>
+                  OFF-CHAIN MEDIAN
+                </div>
+                <span
+                  style={{
+                    fontSize: "clamp(24px,4.5vw,40px)",
+                    fontWeight: 700,
+                    color: "var(--ac)",
+                    textShadow: "0 0 14px var(--acg)",
+                  }}
+                >
+                  {formatPrice(median)}
+                </span>
+              </div>
+              <div>
+                <div style={{ fontSize: 9, letterSpacing: "1px", color: "var(--fg-dim)" }}>
+                  ON-CHAIN ({onChainRoundStr})
+                </div>
+                <span
+                  style={{
+                    fontSize: "clamp(20px,4vw,32px)",
+                    fontWeight: 700,
+                    color: "var(--good)",
+                  }}
+                >
+                  {onChainPriceStr}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         <RequestButton assetId={asset.id} aggregatorKnown={Boolean(getAggregator(asset.id))} />
       </div>
-
-      <PriceChart assetId={asset.id} symbol={asset.symbol} base={price} />
 
       <div
         style={{
@@ -139,11 +198,13 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           marginBottom: 26,
         }}
       >
-        <MiniStat k="LAST ON-CHAIN PRICE" v={formatOnChainPrice(detail.last_on_chain_price)} />
-        <MiniStat k="LATEST ROUND" v={detail.last_round_id ? `#${detail.last_round_id}` : "—"} />
-        <MiniStat k="LAST ON-CHAIN UPDATE" v={formatAgeSince(detail.last_on_chain_at)} />
+        <MiniStat k="LAST ON-CHAIN PRICE" v={onChainPriceStr} />
+        <MiniStat k="LATEST ROUND" v={onChainRoundStr} />
+        <MiniStat k="LAST ON-CHAIN UPDATE" v={onChainAgeStr} />
         <MiniStat k="LAST OFF-CHAIN FETCH" v={formatAgeSince(aggregated_price.aggregated_at)} />
       </div>
+
+      <SourceComposition sources={detail.sources} median={median} />
 
       <div
         style={{
@@ -153,38 +214,85 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
           marginBottom: 26,
         }}
       >
-        <SourceBreakdown sources={detail.sources} />
+        <OnChainRoundsChain rounds={rounds} decimals={decimals} now={now} />
         <OnChainRounds submissions={submissions} now={now} />
       </div>
 
+      {/* Contract facts + Chainlink-compatibility callout (all real). */}
       <div
-        style={{
-          border: "1px solid var(--acd)",
-          background: "rgba(0,0,0,0.3)",
-          padding: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
+        style={{ border: "1px solid var(--acd)", background: "rgba(0,0,0,0.3)", marginBottom: 20 }}
       >
-        <span style={{ fontSize: 10, letterSpacing: "2px", color: "var(--fg-dim)" }}>
-          AGGREGATOR CONTRACT
-        </span>
-        <span
+        <div
           style={{
-            fontSize: 13,
-            color: "var(--fg)",
-            letterSpacing: "0.5px",
-            flex: 1,
-            minWidth: 200,
+            padding: "13px 16px",
+            borderBottom: "1px solid var(--acd)",
+            fontSize: 11,
+            letterSpacing: "2px",
+            color: "var(--ac)",
           }}
         >
-          {aggregator || "not yet observed"}
-        </span>
-        {aggregator ? (
-          <>
-            <CopyButton value={aggregator} />
+          AGGREGATOR CONTRACT
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+            gap: 1,
+            background: "var(--acd)",
+          }}
+        >
+          <Fact k="ADDRESS">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span>{aggregator || "not yet observed"}</span>
+              {aggregator ? <CopyButton value={aggregator} /> : null}
+            </div>
+          </Fact>
+          <Fact k="ASSET ID (bytes32)">{assetIdHash ?? "—"}</Fact>
+          <Fact k="DECIMALS">{String(decimals)}</Fact>
+          <Fact k="TOTAL REQUESTS">{onchain ? onchain.nextReqId.toString() : "—"}</Fact>
+          <Fact k="REQUEST FEE">
+            {onchain ? (onchain.requestFee === 0n ? "0 (free)" : `${onchain.requestFee} wei`) : "—"}
+          </Fact>
+          <Fact k="STALENESS GATING">
+            {onchain ? (onchain.maxAge === MAX_UINT256 ? "off (demo)" : `${onchain.maxAge}s`) : "—"}
+          </Fact>
+        </div>
+        <div
+          style={{
+            padding: "14px 16px",
+            borderTop: "1px solid var(--acd)",
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: "1.5px",
+                color: "var(--fg-dim)",
+                marginBottom: 8,
+              }}
+            >
+              ◇ CHAINLINK AggregatorV3Interface — DROP-IN COMPATIBLE
+            </div>
+            <pre
+              style={{
+                margin: 0,
+                fontFamily: "inherit",
+                fontSize: 11.5,
+                lineHeight: 1.6,
+                color: "#9ad6a0",
+                whiteSpace: "pre-wrap",
+              }}
+            >{`(, int256 answer, , uint256 updatedAt, ) =
+  AggregatorV3Interface(${aggregator ? `${aggregator.slice(0, 10)}…` : "0x…"})
+    .latestRoundData();
+// live: answer = ${onChainPriceStr}, ${onChainAgeStr}`}</pre>
+          </div>
+          {aggregator ? (
             <a
               href={explorerAddress(aggregator)}
               target="_blank"
@@ -199,8 +307,8 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
             >
               EXPLORER ↗
             </a>
-          </>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </div>
   );

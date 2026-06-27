@@ -13,7 +13,8 @@ describe("toTileData", () => {
     expect(data.sourceCount).toBe(3);
     expect(data.sourceAges).toEqual([2, 5, 11]);
     expect(data.onChainAgeStr).toBe("10s ago");
-    expect(data.sparkBase).toBeCloseTo(3412.88);
+    expect(data.spreadStr).toBe("0.04% spread");
+    expect(data.sourcePoints).toHaveLength(3);
   });
 
   it("degrades gracefully when no price is present", () => {
@@ -26,6 +27,7 @@ describe("toTileData", () => {
     expect(data.sourceAges).toEqual([]);
     expect(data.onChainAgeStr).toBe("never");
     expect(data.offChainAgeStr).toBe("—");
-    expect(data.sparkBase).toBe(1);
+    expect(data.spreadStr).toBe("—");
+    expect(data.sourcePoints).toEqual([]);
   });
 });
