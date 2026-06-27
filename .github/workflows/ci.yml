@@ -9,6 +9,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Build-time placeholders. NEXT_PUBLIC_* are inlined at build and required by
+# src/env.ts; the real values are set per-environment at deploy time. RPC_URL has
+# a default in env.ts, so it isn't needed here.
+env:
+  NEXT_PUBLIC_API_URL: http://localhost:8080
+
 jobs:
   verify:
     name: typecheck + lint + test + build
