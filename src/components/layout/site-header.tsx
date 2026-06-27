@@ -33,7 +33,8 @@ function LighthouseMark() {
 export function SiteHeader() {
   const pathname = usePathname();
   const isAbout = pathname === "/about";
-  const isDashboard = !isAbout;
+  const isHowItWorks = pathname === "/how-it-works";
+  const isDashboard = !isAbout && !isHowItWorks;
 
   return (
     <header
@@ -80,6 +81,14 @@ export function SiteHeader() {
       <nav style={{ display: "flex", gap: 6, fontSize: 12, letterSpacing: "2px" }}>
         <Link href="/" className="lh-nav" data-active={isDashboard} style={{ padding: "7px 13px" }}>
           {isDashboard ? <span style={{ color: "var(--ac)" }}>▸ </span> : null}DASHBOARD
+        </Link>
+        <Link
+          href="/how-it-works"
+          className="lh-nav"
+          data-active={isHowItWorks}
+          style={{ padding: "7px 13px" }}
+        >
+          {isHowItWorks ? <span style={{ color: "var(--ac)" }}>▸ </span> : null}HOW IT WORKS
         </Link>
         <Link
           href="/about"

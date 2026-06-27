@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AUTHOR, footerLinks } from "@/config/author";
 import { CHAIN } from "@/config/chain";
 
@@ -52,8 +53,20 @@ export function SiteFooter() {
             </span>
           ))}
         </div>
-        <div style={{ fontSize: 10.5, letterSpacing: "1px", color: "var(--fg-faint)" }}>
-          lighthouse-oracle · {CHAIN.name.toLowerCase()}
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            fontSize: 10.5,
+            letterSpacing: "1px",
+            color: "var(--fg-faint)",
+          }}
+        >
+          <Link href="/how-it-works" style={{ color: "var(--ac)", textDecoration: "none" }}>
+            HOW IT WORKS
+          </Link>
+          <span>lighthouse-oracle · {CHAIN.name.toLowerCase()}</span>
         </div>
       </div>
     </footer>

@@ -36,6 +36,18 @@ test("about page shows author, credentials and projects", async ({ page }) => {
   await expect(page.getByText(/Gateway\.fm/i).first()).toBeVisible();
 });
 
+test("how-it-works page explains the protocol with live sections", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: /HOW IT WORKS/i })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/how-it-works$/);
+  await expect(page.getByRole("heading", { name: /HOW IT WORKS/i })).toBeVisible();
+  await expect(page.getByText(/AggregatorV3Interface/i).first()).toBeVisible();
+  await expect(page.getByText(/independent ECDSA signatures/i)).toBeVisible();
+});
+
 test("an asset tile, when present, drills down to the detail page", async ({ page }) => {
   await page.goto("/");
   const tile = page.getByTestId(/^asset-tile-/).first();
