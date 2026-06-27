@@ -4,127 +4,259 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
+/*
+ * Lighthouse Oracle — CRT / terminal theme.
+ * Amber accent (#ffb000) on near-black (#0a0806), JetBrains Mono. The palette
+ * lives in CSS custom properties so accents can be re-skinned in one place.
+ */
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ac: #ffb000; /* accent */
+  --acg: rgba(255, 176, 0, 0.55); /* accent glow */
+  --acd: rgba(255, 176, 0, 0.16); /* accent dim (borders) */
+  --acf: rgba(255, 176, 0, 0.05); /* accent faint (fills) */
+
+  --bg: #0a0806;
+  --bg-tile: #0c0a07;
+  --fg: #e8dcc4;
+  --fg-muted: #b89c66;
+  --fg-dim: #7d6a47;
+  --fg-faint: #4a3f2a;
+
+  --good: #54e08a;
+  --bad: #ff5a52;
+  --link: #8fb8ff;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --font-sans: var(--font-mono);
+  --font-mono: var(--font-mono);
+  --color-accent: var(--ac);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+
+  --color-border: var(--acd);
+  --color-input: var(--acd);
+  --color-ring: var(--ac);
+  --color-primary: var(--ac);
+  --color-primary-foreground: var(--bg);
+  --color-muted-foreground: var(--fg-dim);
+  --color-destructive: var(--bad);
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes flick {
+  0%,
+  100% {
+    opacity: 0.045;
+  }
+  50% {
+    opacity: 0.085;
+  }
+}
+@keyframes gridmove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 44px;
+  }
+}
+@keyframes beam {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scaleX(0.85);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleX(1.1);
+  }
+}
+@keyframes bootglow {
+  0%,
+  100% {
+    text-shadow: 0 0 8px var(--acg);
+  }
+  50% {
+    text-shadow:
+      0 0 22px var(--acg),
+      0 0 40px var(--acg);
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
+  html,
   body {
-    @apply bg-background text-foreground;
+    background: var(--bg);
+    color: var(--fg);
   }
   html {
-    @apply font-sans;
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
+  body {
+    margin: 0;
+  }
+  ::selection {
+    background: rgba(255, 176, 0, 0.3);
+    color: #fff;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--acd);
+    border: 2px solid var(--bg);
+  }
+  a {
+    color: inherit;
+  }
+}
+
+/* Reduced-motion: kill the ambient CRT animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: must override inline-style animations for reduced motion */
+    animation: none !important;
+  }
+}
+
+@layer components {
+  /* Bordered surface that lifts + glows on hover (asset tiles, credential cards). */
+  .lh-card {
+    border: 1px solid var(--acd);
+    background: linear-gradient(180deg, var(--acf), rgba(0, 0, 0, 0));
+    transition:
+      transform 0.12s,
+      border-color 0.12s,
+      box-shadow 0.12s;
+  }
+  .lh-card:hover {
+    border-color: var(--ac);
+    box-shadow: 0 0 22px -6px var(--acg);
+    transform: translateY(-3px);
+  }
+
+  /* Solid accent CTA. */
+  .lh-btn {
+    background: var(--ac);
+    border: 1px solid var(--ac);
+    color: var(--bg);
+    font-family: inherit;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 0 26px -6px var(--acg);
+    transition: background 0.12s;
+  }
+  .lh-btn:hover:not(:disabled) {
+    background: #ffd479;
+  }
+  .lh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Outlined accent button (header connect, copy, range toggles). */
+  .lh-btn-outline {
+    background: var(--acf);
+    border: 1px solid var(--ac);
+    color: var(--ac);
+    font-family: inherit;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-shadow: 0 0 6px var(--acg);
+    box-shadow: 0 0 14px -4px var(--acg);
+    transition: background 0.12s;
+  }
+  .lh-btn-outline:hover:not(:disabled) {
+    background: var(--acd);
+  }
+  .lh-btn-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Dim bordered control that brightens its border on hover (toggles, links). */
+  .lh-ctl {
+    border: 1px solid var(--acd);
+    color: var(--fg-muted);
+    background: transparent;
+    font-family: inherit;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition:
+      border-color 0.12s,
+      color 0.12s,
+      background 0.12s;
+  }
+  .lh-ctl:hover {
+    border-color: var(--ac);
+    color: var(--ac);
+  }
+
+  /* Nav link with hover affordance. */
+  .lh-nav {
+    color: var(--fg-muted);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      color 0.12s,
+      border-color 0.12s;
+  }
+  .lh-nav:hover {
+    color: var(--ac);
+    border-color: var(--acd);
+  }
+  .lh-nav[data-active="true"] {
+    color: var(--ac);
+  }
+
+  /* Bordered text link (about page, explorer links). */
+  .lh-linkbtn {
+    border: 1px solid var(--acd);
+    color: var(--ac);
+    text-decoration: none;
+    transition:
+      border-color 0.12s,
+      background 0.12s;
+  }
+  .lh-linkbtn:hover {
+    border-color: var(--ac);
+    background: var(--acf);
+  }
+
+  /* Row that tints on hover (project list, breakdown rows). */
+  .lh-row:hover {
+    background: var(--acf);
   }
 }
