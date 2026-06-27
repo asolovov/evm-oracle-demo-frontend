@@ -30,14 +30,23 @@ const TONE_COLOR: Record<TerminalLine["tone"], string> = {
   system: "var(--fg-dim)",
 };
 
-function bootLines(boot: BootInfo, connected: boolean): string[] {
+type BootLine = { text: string; tag?: string; tone?: ReporterFund["tone"] };
+
+function bootLines(boot: BootInfo, connected: boolean, funds: ReporterFund[]): BootLine[] {
   return [
-    "> lighthouse oracle node v1.0.0",
-    `> connect ws://node/ws/stream ... [ ${connected ? "LIVE" : "…"} ]`,
-    `> reporter set ${boot.threshold}-of-${boot.reporters} ......... [ OK ]`,
-    `> tracked assets ${boot.assetCount} ................ [ OK ]`,
-    `> latest block ${boot.block ? `#${boot.block}` : "—"} ........ [ OK ]`,
-    "> ready. watching the markets.",
+    { text: "> lighthouse oracle node v1.0.0" },
+    { text: `> connect ws://node/ws/stream ... [ ${connected ? "LIVE" : "…"} ]` },
+    { text: `> reporter set ${boot.threshold}-of-${boot.reporters} ......... [ OK ]` },
+    { text: `> tracked assets ${boot.assetCount} ................ [ OK ]` },
+    { text: `> latest block ${boot.block ? `#${boot.block}` : "—"} ........ [ OK ]` },
+    ...funds.map(
+      (r): BootLine => ({
+        text: `> reporter ${r.addressShort}  ${r.balanceEth} ETH  ~${r.remainingTxs} tx`,
+        tag: `[${FUND_TAG[r.tone]}]`,
+        tone: r.tone,
+      }),
+    ),
+    { text: "> ready. watching the markets." },
   ];
 }
 
@@ -67,7 +76,7 @@ export function LiveTerminal({
     },
   });
 
-  const boots = bootLines(boot, status === "open");
+  const boots = bootLines(boot, status === "open", reporterFunds);
 
   // Reveal the boot lines one at a time (honors reduced motion).
   useEffect(() => {
@@ -130,58 +139,41 @@ export function LiveTerminal({
         node.log — {status === "open" ? "live" : status}
       </div>
 
-      {/* Boot telemetry (real) */}
-      <pre
+      {/* Boot telemetry (real), typed line by line */}
+      <div
         style={{
-          margin: 0,
-          padding: "12px 16px 4px",
+          padding: "12px 16px 8px",
           fontFamily: "inherit",
           fontSize: 12,
           lineHeight: 1.6,
           color: "#9ad6a0",
-          whiteSpace: "pre-wrap",
         }}
       >
-        {boots.slice(0, reveal).join("\n")}
-        {reveal < boots.length ? (
-          <span
-            style={{
-              display: "inline-block",
-              width: "0.55em",
-              height: "1em",
-              background: "var(--ac)",
-              verticalAlign: "text-bottom",
-              animation: "blink 1s step-end infinite",
-            }}
-          />
-        ) : null}
-      </pre>
-
-      {/* Reporter funding (real on-chain balances + runway) */}
-      {reporterFunds.length > 0 ? (
-        <div
-          style={{
-            padding: "0 16px 10px",
-            fontFamily: "inherit",
-            fontSize: 12,
-            lineHeight: 1.7,
-          }}
-        >
-          {reporterFunds.map((r) => (
-            <div key={r.address} style={{ display: "flex", gap: 8, whiteSpace: "nowrap" }}>
-              <span style={{ color: "var(--fg-dim)", flexShrink: 0 }}>{"> reporter"}</span>
-              <span style={{ color: "var(--fg-muted)" }}>{r.addressShort}</span>
-              <span style={{ color: "var(--fg)", marginLeft: "auto" }}>{r.balanceEth} ETH</span>
-              <span style={{ color: "var(--fg-dim)", width: 72, textAlign: "right" }}>
-                ~{r.remainingTxs} tx
+        {boots.slice(0, reveal).map((line, i) => (
+          <div key={line.text} style={{ whiteSpace: "pre-wrap" }}>
+            {line.text}
+            {line.tag ? (
+              <span style={{ color: line.tone ? FUND_TONE_COLOR[line.tone] : undefined }}>
+                {"  "}
+                {line.tag}
               </span>
-              <span style={{ color: FUND_TONE_COLOR[r.tone], width: 44, textAlign: "right" }}>
-                [{FUND_TAG[r.tone]}]
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
+            ) : null}
+            {i === reveal - 1 && reveal < boots.length ? (
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "0.55em",
+                  height: "1em",
+                  marginLeft: "0.15em",
+                  background: "var(--ac)",
+                  verticalAlign: "text-bottom",
+                  animation: "blink 1s step-end infinite",
+                }}
+              />
+            ) : null}
+          </div>
+        ))}
+      </div>
 
       {/* Live tail */}
       <div
